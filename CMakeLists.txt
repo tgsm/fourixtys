@@ -11,6 +11,9 @@ option(N64_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers")
 find_package(fmt REQUIRED)
 
 set(SOURCES
+    src/common/bits.h
+    src/common/defines.h
+    src/common/types.h
     src/frontend/frontend.h
     src/frontend/headless.cpp
     src/frontend/headless.h
