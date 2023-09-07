@@ -17,7 +17,12 @@ set(SOURCES
     src/frontend/frontend.h
     src/frontend/headless.cpp
     src/frontend/headless.h
+    src/gamepak.cpp
+    src/gamepak.h
     src/main.cpp
+    src/n64.h
+    src/pif.cpp
+    src/pif.h
 )
 
 add_executable(n64emu ${SOURCES})
