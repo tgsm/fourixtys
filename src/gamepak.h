@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fmt/core.h>
 #include <filesystem>
 #include <vector>
 #include "common/defines.h"

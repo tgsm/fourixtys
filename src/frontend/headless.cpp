@@ -12,6 +12,9 @@ int main_headless(std::span<std::string_view> args) {
 
     N64 n64(pif, gamepak);
 
-    fmt::print("Hello, friend\n");
+    for (int i = 0; i < 10; i++) {
+        n64.run();
+    }
+
     return 0;
 }

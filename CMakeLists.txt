@@ -20,9 +20,14 @@ set(SOURCES
     src/gamepak.cpp
     src/gamepak.h
     src/main.cpp
+    src/mmu.cpp
+    src/mmu.h
+    src/n64.cpp
     src/n64.h
     src/pif.cpp
     src/pif.h
+    src/vr4300.cpp
+    src/vr4300.h
 )
 
 add_executable(n64emu ${SOURCES})
