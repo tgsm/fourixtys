@@ -17,6 +17,8 @@ public:
         run_dma_transfer_to_rdram();
     }
 
+    [[nodiscard]] u32 status() const { return m_status; }
+
 private:
     MMU& m_mmu;
 

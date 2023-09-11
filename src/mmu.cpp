@@ -1,3 +1,4 @@
+#include "common/bits.h"
 #include "common/logging.h"
 #include "mmu.h"
 #include "n64.h"
@@ -120,6 +121,27 @@ constexpr u32 MMU::virtual_address_to_physical_address(const u32 virtual_address
 template <typename T>
 T MMU::read(u32 address) {
     switch (address) {
+        case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                return m_rdram.at(idx + 0) << 24 |
+                       m_rdram.at(idx + 1) << 16 |
+                       m_rdram.at(idx + 2) << 8  |
+                       m_rdram.at(idx + 3) << 0;
+            } else if constexpr (Common::TypeIsSame<T, u64>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                return u64(m_rdram.at(idx + 0)) << 56 |
+                       u64(m_rdram.at(idx + 1)) << 48 |
+                       u64(m_rdram.at(idx + 2)) << 40 |
+                       u64(m_rdram.at(idx + 3)) << 32 |
+                       u64(m_rdram.at(idx + 4)) << 24 |
+                       u64(m_rdram.at(idx + 5)) << 16 |
+                       u64(m_rdram.at(idx + 6)) << 8  |
+                       u64(m_rdram.at(idx + 7)) << 0;
+            } else {
+                UNIMPLEMENTED_MSG("Unrecognized read{} from rdram builtin", Common::TypeSizeInBits<T>);
+            }
+
         case SP_DMEM_BASE ... SP_DMEM_END:
             if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - SP_DMEM_BASE;
@@ -131,6 +153,13 @@ T MMU::read(u32 address) {
                 UNIMPLEMENTED_MSG("Unrecognized read{} from SP dmem", Common::TypeSizeInBits<T>);
             }
 
+        case PI_REGISTERS_BASE ... PI_REGISTERS_END:
+            switch (address) {
+                case PI_REG_STATUS:
+                    return m_pi.status();
+                default:
+                    UNIMPLEMENTED_MSG("Unrecognized read{} from PI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+            }
 
         case 0x10000000 ... 0x1FBFFFFF:
             return m_system.gamepak().read<T>(address - 0x10000000);
@@ -152,7 +181,7 @@ void MMU::write(u32 address, T value) {
                 m_rdram.at(address - RDRAM_BUILTIN_BASE) = value;
                 return;
             } else {
-                UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to rdram", Common::TypeSizeInBits<T>, value);
+                UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to rdram builtin", Common::TypeSizeInBits<T>, value);
             }
 
         case SP_DMEM_BASE ... SP_DMEM_END:
@@ -178,6 +207,19 @@ void MMU::write(u32 address, T value) {
                     UNIMPLEMENTED_MSG("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
             }
 
+        case PIF_RAM_BASE ... PIF_RAM_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - PIF_RAM_BASE;
+                m_pif_ram.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_pif_ram.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_pif_ram.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_pif_ram.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
+            } else {
+                LWARN("unimplemented write{} 0x{:08X} to PIF RAM (0x{:08X})", Common::TypeSizeInBits<T>, value, address);
+                return;
+            }
+
         case 0x80000000 ... 0xFFFFFFFF:
             write<T>(virtual_address_to_physical_address(address), value);
             return;
@@ -185,7 +227,7 @@ void MMU::write(u32 address, T value) {
         default:
             LERROR("Unrecognized write{} 0x{:08X} to 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
             return;
-    }    
+    }
 }
 
 u8 MMU::read8(const u32 address) {
