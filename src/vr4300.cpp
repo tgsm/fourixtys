@@ -76,12 +76,24 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             decode_and_execute_special_instruction(instruction);
             return;
 
+        case 0b000010:
+            j(instruction);
+            return;
+
         case 0b000100:
             beq(instruction);
             return;
 
         case 0b000101:
             bne(instruction);
+            return;
+
+        case 0b001000:
+            addi(instruction);
+            return;
+
+        case 0b001001:
+            addiu(instruction);
             return;
 
         case 0b001100:
@@ -98,6 +110,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b100011:
             lw(instruction);
+            return;
+
+        case 0b100100:
+            lbu(instruction);
             return;
 
         case 0b101011:
@@ -125,13 +141,52 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             jr(instruction);
             return;
 
+        case 0b001001:
+            jalr(instruction);
+            return;
+
+        case 0b100001:
+            addu(instruction);
+            return;
+
         case 0b100100:
             and_(instruction);
+            return;
+
+        case 0b101010:
+            slt(instruction);
             return;
 
         default:
             UNIMPLEMENTED_MSG("unrecognized VR4300 SPECIAL op {:06b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
     }
+}
+
+void VR4300::addi(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("addi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    m_gprs[rt] = m_gprs[rs] + s16(imm);
+}
+
+void VR4300::addiu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("addiu ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    m_gprs[rt] = static_cast<s32>(m_gprs[rs] + s16(imm));
+}
+
+void VR4300::addu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("addu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = static_cast<s32>(m_gprs[rs] + m_gprs[rt]);
 }
 
 void VR4300::and_(const u32 instruction) {
@@ -178,6 +233,26 @@ void VR4300::bne(const u32 instruction) {
     }
 }
 
+void VR4300::j(const u32 instruction) {
+    const auto target = Common::bit_range<25, 0>(instruction);
+    const u32 destination = (m_pc & 0xF0000000) | (target << 2);
+    LTRACE_VR4300("j 0x{:08X}", destination);
+
+    m_next_pc = destination;
+    m_about_to_branch = true;
+}
+
+void VR4300::jalr(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("jalr ${}, ${}", reg_name(rd), reg_name(rs));
+
+    m_gprs[rd] = m_pc + 8;
+
+    m_next_pc = m_gprs[rs];
+    m_about_to_branch = true;
+}
+
 void VR4300::jr(const u32 instruction) {
     // FIXME: If these low-order two bits are not zero, an address exception will occur when the jump target instruction is fetched.
 
@@ -186,6 +261,18 @@ void VR4300::jr(const u32 instruction) {
 
     m_next_pc = m_gprs[rs];
     m_about_to_branch = true;
+}
+
+void VR4300::lbu(const u32 instruction) {
+    // TODO: exceptions
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lbu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_gprs[rt] = m_system.mmu().read8(address);
 }
 
 void VR4300::ld(const u32 instruction) {
@@ -247,6 +334,16 @@ void VR4300::sll(const u32 instruction) {
 
     m_gprs[rd] = static_cast<s32>(m_gprs[rt] << sa);
 }
+
+void VR4300::slt(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("slt ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = (s64(m_gprs[rs]) < s64(m_gprs[rt]));
+}
+
 void VR4300::sw(const u32 instruction) {
     // FIXME: If either of the low-order two bits of the address are not zero, an address error exception occurs.
 
