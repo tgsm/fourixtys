@@ -1,4 +1,4 @@
-#include <fmt/core.h>
+#include "common/logging.h"
 #include "mmu.h"
 #include "n64.h"
 
@@ -108,8 +108,7 @@ constexpr u32 MMU::virtual_address_to_physical_address(const u32 virtual_address
         case AddressRanges::Kernel3:
             return virtual_address - KSEG3_BASE;
         default:
-            fmt::print("fatal: Unreachable address range\n");
-            std::abort();
+            UNREACHABLE_MSG("Unreachable address range {}", Common::underlying(range));
     }
 }
 
@@ -124,8 +123,7 @@ T MMU::read(u32 address) {
                        m_sp_dmem.at(idx + 2) << 8  |
                        m_sp_dmem.at(idx + 3) << 0;
             } else {
-                fmt::print("error: Unrecognized read{} from SP dmem\n", Common::TypeSizeInBits<T>);
-                return T(-1);
+                UNIMPLEMENTED_MSG("Unrecognized read{} from SP dmem", Common::TypeSizeInBits<T>);
             }
 
 
@@ -136,7 +134,7 @@ T MMU::read(u32 address) {
             return read<T>(virtual_address_to_physical_address(address));
 
         default:
-            fmt::print("error: Unrecognized read{} from 0x{:08X}\n", Common::TypeSizeInBits<T>, address);
+            LERROR("Unrecognized read{} from 0x{:08X}", Common::TypeSizeInBits<T>, address);
             return T(-1);
     }
 }
@@ -149,8 +147,7 @@ void MMU::write(u32 address, T value) {
                 m_sp_dmem.at(address - SP_DMEM_BASE) = value;
                 return;
             } else {
-                fmt::print("error: Unimplemented write{} 0x{:08X} to SP dmem\n", Common::TypeSizeInBits<T>, value);
-                return;
+                UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP dmem", Common::TypeSizeInBits<T>, value);
             }
 
         case 0x80000000 ... 0xFFFFFFFF:
@@ -158,7 +155,7 @@ void MMU::write(u32 address, T value) {
             return;
 
         default:
-            fmt::print("error: Unrecognized write{} 0x{:08X} to 0x{:08X}\n", Common::TypeSizeInBits<T>, value, address);
+            LERROR("Unrecognized write{} 0x{:08X} to 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
             return;
     }    
 }

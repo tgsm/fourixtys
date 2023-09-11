@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <filesystem>
 #include <vector>
+#include "common/logging.h"
 #include "common/defines.h"
 #include "common/types.h"
 
@@ -24,8 +25,7 @@ public:
                    m_rom.at(address + 2) << 8 |
                    m_rom.at(address + 3) << 0;
         } else {
-            fmt::print("fatal: Unimplemented read{} from gamepak\n", Common::TypeSizeInBits<T>);
-            std::abort();
+            UNIMPLEMENTED_MSG("Unimplemented read{} from gamepak", Common::TypeSizeInBits<T>);
         }
     }
 

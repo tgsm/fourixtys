@@ -13,6 +13,7 @@ find_package(fmt REQUIRED)
 set(SOURCES
     src/common/bits.h
     src/common/defines.h
+    src/common/logging.h
     src/common/types.h
     src/frontend/frontend.h
     src/frontend/headless.cpp

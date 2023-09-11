@@ -1,23 +1,13 @@
 #include <fstream>
-#include <fmt/std.h>
+#include "common/logging.h"
 #include "pif.h"
 
 PIF::PIF(const std::filesystem::path& path) {
-    if (!std::filesystem::is_regular_file(path)) {
-        fmt::print("fatal: Provided PIF is not a regular file: '{}'\n", path);
-        std::abort();
-    }
-
-    if (std::filesystem::file_size(path) != PifSize) {
-        fmt::print("fatal: Provided PIF is not {} bytes: '{}'\n", PifSize, path);
-        std::abort();
-    }
+    ASSERT_MSG(std::filesystem::is_regular_file(path), "Provided PIF is not a regular file: '{}'", path);
+    ASSERT_MSG(std::filesystem::file_size(path) == PifSize, "Provided PIF is not {} bytes: '{}'", PifSize, path);
 
     std::ifstream stream(path, std::ios::binary);
-    if (!stream.good()) {
-        fmt::print("fatal: Could not open provided PIF: '{}'\n", path);
-        std::abort();
-    }
+    ASSERT_MSG(stream.good(), "Could not open provided PIF: '{}'", path);
 
     stream.read(reinterpret_cast<char*>(m_pif.data()), PifSize);
 }

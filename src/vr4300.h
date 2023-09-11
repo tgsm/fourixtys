@@ -2,6 +2,8 @@
 
 #include <array>
 #include <string_view>
+#include "common/bits.h"
+#include "common/defines.h"
 #include "common/types.h"
 
 using namespace std::string_view_literals;
@@ -38,11 +40,31 @@ private:
         "ra"sv,
     };
 
+    static constexpr std::string_view reg_name(std::size_t reg_id) {
+        return m_reg_names.at(reg_id);
+    }
+
     u64 m_pc { 0 };
     u64 m_next_pc { 0 };
     bool m_in_delay_slot { false };
 
     void simulate_pif_routine();
 
+    ALWAYS_INLINE static u8 get_rs(const u32 instruction) {
+        return Common::bit_range<25, 21>(instruction);
+    }
+
+    ALWAYS_INLINE static u8 get_rt(const u32 instruction) {
+        return Common::bit_range<20, 16>(instruction);
+    }
+
+    ALWAYS_INLINE static u8 get_rd(const u32 instruction) {
+        return Common::bit_range<15, 11>(instruction);
+    }
+
     void decode_and_execute_instruction(u32 instruction);
+
+    void lui(u32 instruction);
+    void ori(u32 instruction);
+    void sw(u32 instruction);
 };

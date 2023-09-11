@@ -12,7 +12,7 @@ int main_headless(std::span<std::string_view> args) {
 
     N64 n64(pif, gamepak);
 
-    for (int i = 0; i < 10; i++) {
+    while (true) {
         n64.run();
     }
 

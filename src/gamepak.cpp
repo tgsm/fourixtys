@@ -1,33 +1,20 @@
 #include <bit>
 #include <fstream>
-#include <fmt/core.h>
-#include <fmt/std.h>
+#include "common/logging.h"
 #include "gamepak.h"
 
 static constexpr u32 Z64_IDENTIFIER = 0x80371240;
 static constexpr u32 N64_IDENTIFIER = 0x37804012;
 
 GamePak::GamePak(const std::filesystem::path& path) {
-    if (!std::filesystem::is_regular_file(path)) {
-        fmt::print("fatal: Provided GamePak is not a regular file: '{}'\n", path);
-        std::abort();
-    }
+    ASSERT_MSG(std::filesystem::is_regular_file(path), "Provided GamePak is not a regular file: '{}'", path);
 
     const std::size_t file_size = std::filesystem::file_size(path);
-    if (file_size < 0x40) {
-        fmt::print("fatal: Provided GamePak is not big enough: {}\n", path);
-        std::abort();
-    }
-
-    if (file_size > 0xFBFFFFF) {
-        fmt::print("fatal: Provided GamePak is too big: {}\n", path);
-        std::abort();
-    }
+    ASSERT_MSG(file_size >= 0x40, "fatal: Provided GamePak is not big enough: '{}'", path);
+    ASSERT_MSG(file_size <= 0xFBFFFFF, "fatal: Provided GamePak is too big: '{}'", path);
 
     std::ifstream stream(path, std::ios::binary);
-    if (!stream.good()) {
-        fmt::print("fatal: Could not open provided GamePak: {}\n", path);
-    }
+    ASSERT_MSG(stream.good(), "Could not open provided GamePak: '{}'", path);
 
     m_rom.resize(file_size);
     stream.read(reinterpret_cast<char*>(m_rom.data()), m_rom.size());
@@ -37,22 +24,22 @@ bool GamePak::swap_bytes_for_endianness() {
     const u32 identifier = read<u32>(0);
 
     if (identifier == Z64_IDENTIFIER) {
-        fmt::print("Z64 ROM format, no byteswapping required\n");
+        LINFO("Z64 ROM format, no byteswapping required");
         return true;
     }
 
     if (identifier == N64_IDENTIFIER) {
-        fmt::print("N64 ROM format, byteswapping...\n");
+        LINFO("N64 ROM format, byteswapping...");
 
         for (std::size_t i = 0; i < m_rom.size(); i += sizeof(u16)) {
             u16* word = reinterpret_cast<u16*>(&m_rom.at(i));
             *word = __builtin_bswap16(*word);
         }
 
-        fmt::print("done byteswapping\n");
+        LINFO("done byteswapping");
         return true;
     }
 
-    fmt::print("Unrecognized ROM format identifier {:08X}\n", identifier);
+    LFATAL("Unrecognized ROM format identifier {:08X}", identifier);
     return false;
 }

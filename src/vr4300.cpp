@@ -57,7 +57,58 @@ void VR4300::step() {
     m_gprs[0] = 0;
 
     const u32 instruction = m_system.mmu().read32(m_pc);
-    // decode_and_execute_instruction(instruction);
+    decode_and_execute_instruction(instruction);
 
-    fmt::print("instruction: {:08X}\n", instruction);
+    m_pc = m_next_pc;
+    m_next_pc += 4;
+}
+
+void VR4300::decode_and_execute_instruction(u32 instruction) {
+    const auto op = Common::bit_range<31, 26>(instruction);
+
+    switch (op) {
+        case 0b001101:
+            ori(instruction);
+            return;
+
+        case 0b001111:
+            lui(instruction);
+            return;
+
+        case 0b101011:
+            sw(instruction);
+            return;
+
+        default:
+            UNIMPLEMENTED_MSG("Unrecognized VR4300 op {:06b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
+    }
+}
+
+void VR4300::lui(u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lui ${}, 0x{:04X}", reg_name(rt), imm);
+
+    m_gprs[rt] = static_cast<s32>(imm << 16);
+}
+
+void VR4300::ori(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("ori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    m_gprs[rt] = m_gprs[rs] | imm;
+}
+
+void VR4300::sw(const u32 instruction) {
+    // FIXME: If either of the low-order two bits of the address are not zero, an address error exception occurs.
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sw ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_system.mmu().write32(address, m_gprs[rt]);
 }
