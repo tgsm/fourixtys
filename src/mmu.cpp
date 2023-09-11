@@ -201,6 +201,34 @@ void MMU::write(u32 address, T value) {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP dmem", Common::TypeSizeInBits<T>, value);
             }
 
+        case VI_REGISTERS_BASE ... VI_REGISTERS_END:
+            switch (address) {
+                case VI_REG_CONTROL:
+                    m_vi.set_control(static_cast<u32>(value));
+                    return;
+                case VI_REG_ORIGIN:
+                    m_vi.set_origin(static_cast<u32>(value));
+                    return;
+                case VI_REG_WIDTH:
+                    m_vi.set_width(static_cast<u32>(value));
+                    return;
+                case VI_REG_V_INTR:
+                    m_vi.set_interrupt_line(static_cast<u32>(value));
+                    return;
+                case VI_REG_V_START:
+                    m_vi.set_vstart(static_cast<u32>(value));
+                    return;
+                case VI_REG_X_SCALE:
+                    m_vi.set_xscale(static_cast<u32>(value));
+                    return;
+                case VI_REG_Y_SCALE:
+                    m_vi.set_yscale(static_cast<u32>(value));
+                    return;
+                default:
+                    LERROR("Unrecognized write{} 0x{:08X} to VI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    return;
+            }
+
         case PI_REGISTERS_BASE ... PI_REGISTERS_END:
             switch (address) {
                 case PI_REG_DRAM_ADDRESS:

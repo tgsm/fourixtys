@@ -3,6 +3,7 @@
 #include <array>
 #include "common/types.h"
 #include "pi.h"
+#include "vi.h"
 
 class N64;
 
@@ -35,9 +36,13 @@ public:
     template <typename T>
     void write(u32 address, T value);
 
+    VI& vi() { return m_vi; }
+    const VI& vi() const { return m_vi; }
+
 private:
     N64& m_system;
     PI m_pi;
+    VI m_vi;
 
     std::array<u8, 0x400000> m_rdram {};
     std::array<u8, 0x1000> m_sp_dmem {};
