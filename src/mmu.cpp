@@ -122,7 +122,9 @@ template <typename T>
 T MMU::read(u32 address) {
     switch (address) {
         case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
-            if constexpr (Common::TypeIsSame<T, u32>) {
+            if constexpr (Common::TypeIsSame<T, u8>) {
+                return m_rdram.at(address = RDRAM_BUILTIN_BASE);
+            } else if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - RDRAM_BUILTIN_BASE;
                 return m_rdram.at(idx + 0) << 24 |
                        m_rdram.at(idx + 1) << 16 |
@@ -179,6 +181,13 @@ void MMU::write(u32 address, T value) {
         case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
             if constexpr (Common::TypeIsSame<T, u8>) {
                 m_rdram.at(address - RDRAM_BUILTIN_BASE) = value;
+                return;
+            } else if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                m_rdram.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_rdram.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_rdram.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_rdram.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
                 return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to rdram builtin", Common::TypeSizeInBits<T>, value);
