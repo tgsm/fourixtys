@@ -13,5 +13,9 @@ int main(int argc, char* argv[]) {
         args.push_back(argv[i]);
     }
 
+#ifdef N64_FRONTEND_SDL
+    return main_SDL(args);
+#else
     return main_headless(args);
+#endif
 }

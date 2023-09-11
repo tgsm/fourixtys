@@ -6,9 +6,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+find_package(fmt REQUIRED)
+
 option(N64_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers")
 
-find_package(fmt REQUIRED)
+set(N64_FRONTEND "SDL2" CACHE STRING "The frontend n64emu will run on")
+set_property(CACHE N64_FRONTEND PROPERTY STRINGS "SDL2" "Headless")
 
 set(SOURCES
     src/common/bits.h
@@ -35,6 +38,10 @@ set(SOURCES
     src/vr4300.h
 )
 
+if (${N64_FRONTEND} MATCHES "SDL2")
+    set(SOURCES ${SOURCES} "src/frontend/sdl.cpp")
+endif()
+
 add_executable(n64emu ${SOURCES})
 
 target_include_directories(n64emu PRIVATE src)
@@ -50,6 +57,12 @@ target_compile_options(n64emu PRIVATE
 if (N64_ENABLE_SANITIZERS)
     target_compile_options(n64emu PRIVATE -fsanitize=undefined,address)
     target_link_libraries(n64emu asan ubsan)
+endif()
+
+if (${N64_FRONTEND} MATCHES "SDL2")
+    find_package(SDL2 REQUIRED)
+    target_compile_definitions(n64emu PRIVATE "N64_FRONTEND_SDL")
+    target_link_libraries(n64emu SDL2)
 endif()
 
 target_link_libraries(n64emu fmt)
