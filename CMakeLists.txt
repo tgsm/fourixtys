@@ -25,6 +25,8 @@ set(SOURCES
     src/mmu.h
     src/n64.cpp
     src/n64.h
+    src/pi.cpp
+    src/pi.h
     src/pif.cpp
     src/pif.h
     src/vr4300.cpp

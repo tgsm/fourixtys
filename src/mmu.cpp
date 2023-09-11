@@ -60,6 +60,11 @@ static constexpr u32 AI_REGISTERS_BASE         = 0x04500000;
 static constexpr u32 AI_REGISTERS_END          = 0x045FFFFF;
 
 static constexpr u32 PI_REGISTERS_BASE         = 0x04600000;
+static constexpr u32 PI_REG_DRAM_ADDRESS       = 0x04600000;
+static constexpr u32 PI_REG_DMA_CART_ADDRESS   = 0x04600004;
+static constexpr u32 PI_REG_DMA_READ_LENGTH    = 0x04600008;
+static constexpr u32 PI_REG_DMA_WRITE_LENGTH   = 0x0460000C;
+static constexpr u32 PI_REG_STATUS             = 0x04600010;
 static constexpr u32 PI_REGISTERS_END          = 0x046FFFFF;
 
 static constexpr u32 RI_REGISTERS_BASE         = 0x04700000;
@@ -142,12 +147,35 @@ T MMU::read(u32 address) {
 template <typename T>
 void MMU::write(u32 address, T value) {
     switch (address) {
+        case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
+            if constexpr (Common::TypeIsSame<T, u8>) {
+                m_rdram.at(address - RDRAM_BUILTIN_BASE) = value;
+                return;
+            } else {
+                UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to rdram", Common::TypeSizeInBits<T>, value);
+            }
+
         case SP_DMEM_BASE ... SP_DMEM_END:
             if constexpr (Common::TypeIsSame<T, u8>) {
                 m_sp_dmem.at(address - SP_DMEM_BASE) = value;
                 return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP dmem", Common::TypeSizeInBits<T>, value);
+            }
+
+        case PI_REGISTERS_BASE ... PI_REGISTERS_END:
+            switch (address) {
+                case PI_REG_DRAM_ADDRESS:
+                    m_pi.set_dram_address(value);
+                    return;
+                case PI_REG_DMA_CART_ADDRESS:
+                    m_pi.set_dma_cart_address(value);
+                    return;
+                case PI_REG_DMA_WRITE_LENGTH:
+                    m_pi.set_dma_write_length(value);
+                    return;
+                default:
+                    UNIMPLEMENTED_MSG("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
             }
 
         case 0x80000000 ... 0xFFFFFFFF:
