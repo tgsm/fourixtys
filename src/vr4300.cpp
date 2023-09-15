@@ -116,6 +116,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             ori(instruction);
             return;
 
+        case 0b001110:
+            xori(instruction);
+            return;
+
         case 0b001111:
             lui(instruction);
             return;
@@ -213,12 +217,20 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             addu(instruction);
             return;
 
+        case 0b100011:
+            subu(instruction);
+            return;
+
         case 0b100100:
             and_(instruction);
             return;
 
         case 0b100101:
             or_(instruction);
+            return;
+
+        case 0b100110:
+            xor_(instruction);
             return;
 
         case 0b100111:
@@ -658,6 +670,15 @@ void VR4300::srlv(const u32 instruction) {
     m_gprs[rd] = static_cast<s32>(static_cast<u32>(m_gprs[rt]) >> Common::lowest_bits(m_gprs[rs], 5));
 }
 
+void VR4300::subu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("subu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = static_cast<s32>(m_gprs[rs] - m_gprs[rt]);
+}
+
 void VR4300::sw(const u32 instruction) {
     // FIXME: If either of the low-order two bits of the address are not zero, an address error exception occurs.
 
@@ -668,4 +689,22 @@ void VR4300::sw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write32(address, m_gprs[rt]);
+}
+
+void VR4300::xor_(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("xor ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] ^ m_gprs[rt];
+}
+
+void VR4300::xori(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("xori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    m_gprs[rt] = m_gprs[rs] ^ imm;
 }

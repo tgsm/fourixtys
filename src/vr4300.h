@@ -105,5 +105,8 @@ private:
     void srav(u32 instruction);
     void srl(u32 instruction);
     void srlv(u32 instruction);
+    void subu(u32 instruction);
     void sw(u32 instruction);
+    void xor_(u32 instruction);
+    void xori(u32 instruction);
 };
