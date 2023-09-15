@@ -80,6 +80,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             j(instruction);
             return;
 
+        case 0b000011:
+            jal(instruction);
+            return;
+
         case 0b000100:
             beq(instruction);
             return;
@@ -108,12 +112,32 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             lui(instruction);
             return;
 
+        case 0b010100:
+            beql(instruction);
+            return;
+
+        case 0b010101:
+            bnel(instruction);
+            return;
+
+        case 0b011000:
+            daddi(instruction);
+            return;
+
         case 0b100011:
             lw(instruction);
             return;
 
         case 0b100100:
             lbu(instruction);
+            return;
+
+        case 0b100101:
+            lhu(instruction);
+            return;
+
+        case 0b100111:
+            lwu(instruction);
             return;
 
         case 0b101011:
@@ -145,6 +169,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             jalr(instruction);
             return;
 
+        case 0b100000:
+            add(instruction);
+            return;
+
         case 0b100001:
             addu(instruction);
             return;
@@ -160,6 +188,15 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
         default:
             UNIMPLEMENTED_MSG("unrecognized VR4300 SPECIAL op {:06b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
     }
+}
+
+void VR4300::add(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("add ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
 }
 
 void VR4300::addi(const u32 instruction) {
@@ -220,6 +257,21 @@ void VR4300::beq(const u32 instruction) {
     }
 }
 
+void VR4300::beql(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("beql ${}, ${}, 0x{:04X}", reg_name(rs), reg_name(rt), new_pc);
+
+    if (m_gprs[rs] == m_gprs[rt]) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    } else {
+        m_next_pc += 4;
+    }
+}
+
 void VR4300::bne(const u32 instruction) {
     const auto rs = get_rs(instruction);
     const auto rt = get_rt(instruction);
@@ -233,10 +285,54 @@ void VR4300::bne(const u32 instruction) {
     }
 }
 
+void VR4300::bnel(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bnel ${}, ${}, 0x{:04X}", reg_name(rs), reg_name(rt), new_pc);
+
+    if (m_gprs[rs] != m_gprs[rt]) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    } else {
+        m_next_pc += 4;
+    }
+}
+
+void VR4300::daddi(const u32 instruction) {
+    // FIXME: An integer overflow exception occurs if carries out of
+    //        bits 62 and 63 differ (2’s complement overflow).  The
+    //        contents of destination register rt is not modified when
+    //        an integer overflow exception occurs.
+
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("daddi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    const s64 addend1 = m_gprs[rs];
+    const s16 addend2 = imm;
+    const s64 result = addend1 + addend2;
+
+    m_gprs[rt] = result;
+}
+
 void VR4300::j(const u32 instruction) {
     const auto target = Common::bit_range<25, 0>(instruction);
     const u32 destination = (m_pc & 0xF0000000) | (target << 2);
     LTRACE_VR4300("j 0x{:08X}", destination);
+
+    m_next_pc = destination;
+    m_about_to_branch = true;
+}
+
+void VR4300::jal(const u32 instruction) {
+    const auto target = Common::bit_range<25, 0>(instruction);
+    const u32 destination = (m_pc & 0xF0000000) | (target << 2);
+    LTRACE_VR4300("jal 0x{:08X}", destination);
+
+    m_gprs[31] = m_pc + 8;
 
     m_next_pc = destination;
     m_about_to_branch = true;
@@ -287,6 +383,18 @@ void VR4300::ld(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read64(address);
 }
 
+void VR4300::lhu(const u32 instruction) {
+    // TODO: exceptions
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lhu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_gprs[rt] = m_system.mmu().read16(address);
+}
+
 void VR4300::lui(u32 instruction) {
     const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
@@ -305,6 +413,18 @@ void VR4300::lw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + s16(offset);
     m_gprs[rt] = static_cast<s32>(m_system.mmu().read32(address));
+}
+
+void VR4300::lwu(const u32 instruction) {
+    // TODO: throw an exception if either of the low-order two bits of the address is not zero
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lwu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + s16(offset);
+    m_gprs[rt] = m_system.mmu().read32(address);
 }
 
 void VR4300::ori(const u32 instruction) {
