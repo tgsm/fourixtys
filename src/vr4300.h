@@ -19,7 +19,7 @@ public:
 private:
     N64& m_system;
 
-    bool m_enable_trace_logging { true };
+    bool m_enable_trace_logging { false };
 
     std::array<u64, 32> m_gprs {};
     u64 m_hi { 0 };
