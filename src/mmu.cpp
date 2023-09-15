@@ -119,11 +119,11 @@ constexpr u32 MMU::virtual_address_to_physical_address(const u32 virtual_address
 }
 
 template <typename T>
-T MMU::read(u32 address) {
+T MMU::read(const u32 address) {
     switch (address) {
         case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
             if constexpr (Common::TypeIsSame<T, u8>) {
-                return m_rdram.at(address = RDRAM_BUILTIN_BASE);
+                return m_rdram.at(address - RDRAM_BUILTIN_BASE);
             } else if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - RDRAM_BUILTIN_BASE;
                 return m_rdram.at(idx + 0) << 24 |
@@ -176,7 +176,7 @@ T MMU::read(u32 address) {
 }
 
 template <typename T>
-void MMU::write(u32 address, T value) {
+void MMU::write(const u32 address, const T value) {
     switch (address) {
         case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
             if constexpr (Common::TypeIsSame<T, u8>) {
