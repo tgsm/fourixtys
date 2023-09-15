@@ -25,4 +25,7 @@ private:
     GamePak& m_gamepak;
     MMU m_mmu;
     VR4300 m_vr4300;
+
+    u32 m_scanline_cycles {};
+    u32 m_frame_cycles {};
 };

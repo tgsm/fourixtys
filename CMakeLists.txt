@@ -19,8 +19,6 @@ set(SOURCES
     src/common/logging.h
     src/common/types.h
     src/frontend/frontend.h
-    src/frontend/headless.cpp
-    src/frontend/headless.h
     src/gamepak.cpp
     src/gamepak.h
     src/main.cpp
@@ -39,7 +37,9 @@ set(SOURCES
 )
 
 if (${N64_FRONTEND} MATCHES "SDL2")
-    set(SOURCES ${SOURCES} "src/frontend/sdl.cpp")
+    set(SOURCES ${SOURCES} "src/frontend/sdl.cpp" "src/frontend/sdl.h")
+else()
+    set(SOURCES ${SOURCES} "src/frontend/headless.cpp" "src/frontend/headless.h")
 endif()
 
 add_executable(n64emu ${SOURCES})

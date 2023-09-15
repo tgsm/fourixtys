@@ -39,6 +39,8 @@ public:
     VI& vi() { return m_vi; }
     const VI& vi() const { return m_vi; }
 
+    const auto& rdram() const { return m_rdram; }
+
 private:
     N64& m_system;
     PI m_pi;
