@@ -76,6 +76,7 @@ private:
     void beq(u32 instruction);
     void beql(u32 instruction);
     void bgezal(u32 instruction);
+    void bgtz(u32 instruction);
     void bne(u32 instruction);
     void bnel(u32 instruction);
     void cache(u32 instruction);
@@ -89,12 +90,14 @@ private:
     void jal(u32 instruction);
     void jalr(u32 instruction);
     void jr(u32 instruction);
+    void lb(u32 instruction);
     void lbu(u32 instruction);
     void ld(u32 instruction);
     void lhu(u32 instruction);
     void lui(u32 instruction);
     void lw(u32 instruction);
     void lwu(u32 instruction);
+    void mfhi(u32 instruction);
     void mflo(u32 instruction);
     void mtc0(u32 instruction);
     void multu(u32 instruction);
@@ -102,6 +105,7 @@ private:
     void nor(u32 instruction);
     void or_(u32 instruction);
     void ori(u32 instruction);
+    void sd(u32 instruction);
     void sll(u32 instruction);
     void sllv(u32 instruction);
     void slt(u32 instruction);
