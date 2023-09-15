@@ -76,6 +76,11 @@ private:
     void bne(u32 instruction);
     void bnel(u32 instruction);
     void daddi(u32 instruction);
+    void daddiu(u32 instruction);
+    void dsll(u32 instruction);
+    void dsllv(u32 instruction);
+    void dsll32(u32 instruction);
+    void dsra32(u32 instruction);
     void j(u32 instruction);
     void jal(u32 instruction);
     void jalr(u32 instruction);
@@ -86,9 +91,12 @@ private:
     void lui(u32 instruction);
     void lw(u32 instruction);
     void lwu(u32 instruction);
-    void ori(u32 instruction);
     void nop(u32 instruction);
+    void nor(u32 instruction);
+    void or_(u32 instruction);
+    void ori(u32 instruction);
     void sll(u32 instruction);
+    void sllv(u32 instruction);
     void slt(u32 instruction);
     void sw(u32 instruction);
 };

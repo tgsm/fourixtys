@@ -124,6 +124,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             daddi(instruction);
             return;
 
+        case 0b011001:
+            daddiu(instruction);
+            return;
+
         case 0b100011:
             lw(instruction);
             return;
@@ -161,12 +165,20 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             sll(instruction);
             return;
 
+        case 0b000100:
+            sllv(instruction);
+            return;
+
         case 0b001000:
             jr(instruction);
             return;
 
         case 0b001001:
             jalr(instruction);
+            return;
+
+        case 0b010100:
+            dsllv(instruction);
             return;
 
         case 0b100000:
@@ -181,8 +193,28 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             and_(instruction);
             return;
 
+        case 0b100101:
+            or_(instruction);
+            return;
+
+        case 0b100111:
+            nor(instruction);
+            return;
+
         case 0b101010:
             slt(instruction);
+            return;
+
+        case 0b111000:
+            dsll(instruction);
+            return;
+
+        case 0b111100:
+            dsll32(instruction);
+            return;
+
+        case 0b111111:
+            dsra32(instruction);
             return;
 
         default:
@@ -318,6 +350,51 @@ void VR4300::daddi(const u32 instruction) {
     m_gprs[rt] = result;
 }
 
+void VR4300::daddiu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 imm = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("daddiu ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
+
+    m_gprs[rt] = m_gprs[rs] + s16(imm);
+}
+
+void VR4300::dsll(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    const auto sa = Common::bit_range<10, 6>(instruction);
+    LTRACE_VR4300("dsll ${}, ${}, ${}", reg_name(rd), reg_name(rt), sa);
+
+    m_gprs[rd] = m_gprs[rt] << sa;
+}
+
+void VR4300::dsllv(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dsllv ${}, ${}, ${}", reg_name(rd), reg_name(rt), reg_name(rs));
+
+    m_gprs[rd] = m_gprs[rt] << Common::lowest_bits(m_gprs[rs], 6);
+}
+
+void VR4300::dsll32(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    const auto sa = Common::bit_range<10, 6>(instruction);
+    LTRACE_VR4300("dsll32 ${}, ${}, ${}", reg_name(rd), reg_name(rt), sa);
+
+    m_gprs[rd] = m_gprs[rt] << (32 + sa);
+}
+
+void VR4300::dsra32(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    const auto sa = Common::bit_range<10, 6>(instruction);
+    LTRACE_VR4300("dsra32 ${}, ${}, ${}", reg_name(rd), reg_name(rt), sa);
+
+    m_gprs[rd] = static_cast<s64>(m_gprs[rt]) >> (32 + sa);
+}
+
 void VR4300::j(const u32 instruction) {
     const auto target = Common::bit_range<25, 0>(instruction);
     const u32 destination = (m_pc & 0xF0000000) | (target << 2);
@@ -427,6 +504,28 @@ void VR4300::lwu(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read32(address);
 }
 
+void VR4300::nop(const u32 instruction) {
+    LTRACE_VR4300("nop");
+}
+
+void VR4300::nor(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("nor ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = ~(m_gprs[rs] | m_gprs[rt]);
+}
+
+void VR4300::or_(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("or ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] | m_gprs[rt];
+}
+
 void VR4300::ori(const u32 instruction) {
     const auto rs = get_rs(instruction);
     const auto rt = get_rt(instruction);
@@ -434,10 +533,6 @@ void VR4300::ori(const u32 instruction) {
     LTRACE_VR4300("ori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
     m_gprs[rt] = m_gprs[rs] | imm;
-}
-
-void VR4300::nop(const u32 instruction) {
-    LTRACE_VR4300("nop");
 }
 
 void VR4300::sll(const u32 instruction) {
@@ -449,10 +544,18 @@ void VR4300::sll(const u32 instruction) {
     const auto rt = get_rt(instruction);
     const auto rd = get_rd(instruction);
     const auto sa = Common::bit_range<10, 6>(instruction);
-
     LTRACE_VR4300("sll ${}, ${}, {}", reg_name(rd), reg_name(rt), sa);
 
     m_gprs[rd] = static_cast<s32>(m_gprs[rt] << sa);
+}
+
+void VR4300::sllv(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("sllv ${}, ${}, {}", reg_name(rd), reg_name(rt), reg_name(rs));
+
+    m_gprs[rd] = static_cast<s32>(m_gprs[rt] << Common::lowest_bits(m_gprs[rs], 5));
 }
 
 void VR4300::slt(const u32 instruction) {
