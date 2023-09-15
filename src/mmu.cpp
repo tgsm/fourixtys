@@ -159,6 +159,27 @@ T MMU::read(const u32 address) {
                 UNIMPLEMENTED_MSG("Unrecognized read{} from SP dmem", Common::TypeSizeInBits<T>);
             }
 
+        case SP_IMEM_BASE ... SP_IMEM_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - SP_IMEM_BASE;
+                return m_sp_imem.at(idx + 0) << 24 |
+                       m_sp_imem.at(idx + 1) << 16 |
+                       m_sp_imem.at(idx + 2) << 8  |
+                       m_sp_imem.at(idx + 3) << 0;
+            } else {
+                UNIMPLEMENTED_MSG("Unrecognized read{} from SP imem", Common::TypeSizeInBits<T>);
+            }
+
+        case SP_REGISTERS_BASE ... SP_REGISTERS_END:
+            switch (address) {
+                case 0x04080000: // RSP program counter
+                    return 0;
+
+                default:
+                    LERROR("Unrecognized read{} from SP register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    return T(-1);
+            }
+
         case PI_REGISTERS_BASE ... PI_REGISTERS_END:
             switch (address) {
                 case PI_REG_STATUS:
@@ -201,8 +222,27 @@ void MMU::write(const u32 address, const T value) {
             if constexpr (Common::TypeIsSame<T, u8>) {
                 m_sp_dmem.at(address - SP_DMEM_BASE) = value;
                 return;
+            } else if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - SP_DMEM_BASE;
+                m_sp_dmem.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_sp_dmem.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_sp_dmem.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_sp_dmem.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP dmem", Common::TypeSizeInBits<T>, value);
+            }
+
+        case SP_IMEM_BASE ... SP_IMEM_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - SP_IMEM_BASE;
+                m_sp_imem.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_sp_imem.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_sp_imem.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_sp_imem.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
+            } else {
+                UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP imem", Common::TypeSizeInBits<T>, value);
             }
 
         case VI_REGISTERS_BASE ... VI_REGISTERS_END:
@@ -243,6 +283,10 @@ void MMU::write(const u32 address, const T value) {
                     return;
                 case PI_REG_DMA_WRITE_LENGTH:
                     m_pi.set_dma_write_length(value);
+                    return;
+                case PI_REG_STATUS:
+                    // FIXME: Clear PI interrupt if bit 1 is set.
+                    // FIXME: Reset DMA controller and stop any transfer being done if bit 0 is set.
                     return;
                 default:
                     UNIMPLEMENTED_MSG("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
