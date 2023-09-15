@@ -98,5 +98,12 @@ private:
     void sll(u32 instruction);
     void sllv(u32 instruction);
     void slt(u32 instruction);
+    void slti(u32 instruction);
+    void sltiu(u32 instruction);
+    void sltu(u32 instruction);
+    void sra(u32 instruction);
+    void srav(u32 instruction);
+    void srl(u32 instruction);
+    void srlv(u32 instruction);
     void sw(u32 instruction);
 };
