@@ -76,6 +76,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             decode_and_execute_special_instruction(instruction);
             return;
 
+        case 0b000001:
+            decode_and_execute_regimm_instruction(instruction);
+            return;
+
         case 0b010000:
             decode_and_execute_cop0_instruction(instruction);
             return;
@@ -213,8 +217,16 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             jalr(instruction);
             return;
 
+        case 0b010010:
+            mflo(instruction);
+            return;
+
         case 0b010100:
             dsllv(instruction);
+            return;
+
+        case 0b011001:
+            multu(instruction);
             return;
 
         case 0b100000:
@@ -267,6 +279,19 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         default:
             UNIMPLEMENTED_MSG("unrecognized VR4300 SPECIAL op {:06b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
+    }
+}
+
+void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
+    const auto op = Common::bit_range<20, 16>(instruction);
+
+    switch (op) {
+        case 0b10001:
+            bgezal(instruction);
+            return;
+
+        default:
+            UNIMPLEMENTED_MSG("unrecognized VR4300 REGIMM op {:05b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
     }
 }
 
@@ -362,6 +387,20 @@ void VR4300::beql(const u32 instruction) {
         m_about_to_branch = true;
     } else {
         m_next_pc += 4;
+    }
+}
+
+void VR4300::bgezal(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bgezal ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    m_gprs[31] = m_pc + 8;
+
+    if (static_cast<s64>(m_gprs[rs]) >= 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
     }
 }
 
@@ -574,12 +613,31 @@ void VR4300::lwu(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read32(address);
 }
 
+void VR4300::mflo(const u32 instruction) {
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("mflo ${}", reg_name(rd));
+
+    m_gprs[rd] = m_lo;
+}
+
 void VR4300::mtc0(const u32 instruction) {
     const auto rt = get_rt(instruction);
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), rd);
 
     LWARN("MTC0 is stubbed");
+}
+
+void VR4300::multu(const u32 instruction) {
+    // FIXME: edge cases
+
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("multu ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const u64 result = m_gprs[rs] * m_gprs[rt];
+    m_hi = static_cast<s32>(Common::bit_range<63, 32>(result));
+    m_lo = static_cast<s32>(Common::bit_range<31, 0>(result));
 }
 
 void VR4300::nop(const u32 instruction) {
