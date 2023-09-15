@@ -32,10 +32,11 @@ void render_screen(const N64& n64) {
     const auto v_video = vi.vstart();
     const auto v_start = Common::bit_range<25, 16>(v_video);
     const auto v_end = Common::bit_range<9, 0>(v_video);
-    const auto height = (v_end - v_start) / 2;
+    const auto y_scale = Common::bit_range<11, 10>(vi.yscale()); // FIXME: Handle fractional bits
+    const auto height = ((v_end - v_start) / 2) * y_scale;
     const auto origin = Common::bit_range<23, 0>(vi.origin());
     const auto color_format = Common::bit_range<1, 0>(vi.control());
-    LINFO("Draw: width={}, height={}, origin={:08X}, color_format={}", width, height, origin, color_format);
+    // LINFO("Draw: width={}, height={}, yscale={}, origin={:08X}, color_format={}", width, height, y_scale, origin, color_format);
 
     switch (color_format) {
         case 0: // Blank
