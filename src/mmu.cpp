@@ -170,6 +170,16 @@ T MMU::read(const u32 address) {
                 UNIMPLEMENTED_MSG("Unrecognized read{} from SP imem", Common::TypeSizeInBits<T>);
             }
 
+        case VI_REGISTERS_BASE ... VI_REGISTERS_END:
+            switch (address) {
+                case VI_REG_V_CURRENT:
+                    return m_vi.current_line();
+
+                default:
+                    LERROR("Unrecognized read{} from VI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    return T(-1);
+            }
+
         case SP_REGISTERS_BASE ... SP_REGISTERS_END:
             switch (address) {
                 case 0x04080000: // RSP program counter
@@ -213,6 +223,17 @@ void MMU::write(const u32 address, const T value) {
                 m_rdram.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
                 m_rdram.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
                 m_rdram.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
+            } else if constexpr (Common::TypeIsSame<T, u64>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                m_rdram.at(idx + 0) = static_cast<u8>(Common::bit_range<63, 56>(value));
+                m_rdram.at(idx + 1) = static_cast<u8>(Common::bit_range<55, 48>(value));
+                m_rdram.at(idx + 2) = static_cast<u8>(Common::bit_range<47, 40>(value));
+                m_rdram.at(idx + 3) = static_cast<u8>(Common::bit_range<39, 32>(value));
+                m_rdram.at(idx + 4) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_rdram.at(idx + 5) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_rdram.at(idx + 6) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_rdram.at(idx + 7) = static_cast<u8>(Common::bit_range<7, 0>(value));
                 return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to rdram builtin", Common::TypeSizeInBits<T>, value);
