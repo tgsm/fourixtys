@@ -76,6 +76,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             decode_and_execute_special_instruction(instruction);
             return;
 
+        case 0b010000:
+            decode_and_execute_cop0_instruction(instruction);
+            return;
+
         case 0b000010:
             j(instruction);
             return;
@@ -158,6 +162,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b101011:
             sw(instruction);
+            return;
+
+        case 0b101111:
+            cache(instruction);
             return;
 
         case 0b110111:
@@ -259,6 +267,19 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         default:
             UNIMPLEMENTED_MSG("unrecognized VR4300 SPECIAL op {:06b} ({}, {}) (instr={:08X}, pc={:016X})", op, op >> 3, op & 7, instruction, m_pc);
+    }
+}
+
+void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
+    const auto op = Common::bit_range<25, 21>(instruction);
+
+    switch (op) {
+        case 0b00100:
+            mtc0(instruction);
+            return;
+
+        default:
+            UNIMPLEMENTED_MSG("unrecognized COP0 op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
 }
 
@@ -370,6 +391,15 @@ void VR4300::bnel(const u32 instruction) {
     } else {
         m_next_pc += 4;
     }
+}
+
+void VR4300::cache(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto op = Common::bit_range<20, 16>(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("cache {}, 0x{:04X}(${})", op, offset, reg_name(base));
+
+    LWARN("CACHE is stubbed");
 }
 
 void VR4300::daddi(const u32 instruction) {
@@ -542,6 +572,14 @@ void VR4300::lwu(const u32 instruction) {
 
     const u32 address = m_gprs[base] + s16(offset);
     m_gprs[rt] = m_system.mmu().read32(address);
+}
+
+void VR4300::mtc0(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), rd);
+
+    LWARN("MTC0 is stubbed");
 }
 
 void VR4300::nop(const u32 instruction) {

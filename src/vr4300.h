@@ -64,6 +64,7 @@ private:
 
     void decode_and_execute_instruction(u32 instruction);
     void decode_and_execute_special_instruction(u32 instruction);
+    void decode_and_execute_cop0_instruction(u32 instruction);
 
     void add(u32 instruction);
     void addi(u32 instruction);
@@ -75,6 +76,7 @@ private:
     void beql(u32 instruction);
     void bne(u32 instruction);
     void bnel(u32 instruction);
+    void cache(u32 instruction);
     void daddi(u32 instruction);
     void daddiu(u32 instruction);
     void dsll(u32 instruction);
@@ -91,6 +93,7 @@ private:
     void lui(u32 instruction);
     void lw(u32 instruction);
     void lwu(u32 instruction);
+    void mtc0(u32 instruction);
     void nop(u32 instruction);
     void nor(u32 instruction);
     void or_(u32 instruction);
