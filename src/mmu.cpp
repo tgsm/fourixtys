@@ -124,6 +124,10 @@ T MMU::read(const u32 address) {
         case RDRAM_BUILTIN_BASE ... RDRAM_BUILTIN_END:
             if constexpr (Common::TypeIsSame<T, u8>) {
                 return m_rdram.at(address - RDRAM_BUILTIN_BASE);
+            } else if constexpr (Common::TypeIsSame<T, u16>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                return m_rdram.at(idx + 0) << 8 |
+                       m_rdram.at(idx + 1) << 0;
             } else if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - RDRAM_BUILTIN_BASE;
                 return m_rdram.at(idx + 0) << 24 |
