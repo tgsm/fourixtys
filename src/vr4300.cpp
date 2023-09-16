@@ -245,6 +245,30 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             multu(instruction);
             return;
 
+        case 0b011010:
+            div(instruction);
+            return;
+
+        case 0b011011:
+            divu(instruction);
+            return;
+
+        case 0b011100:
+            dmult(instruction);
+            return;
+
+        case 0b011101:
+            dmultu(instruction);
+            return;
+
+        case 0b011110:
+            ddiv(instruction);
+            return;
+
+        case 0b011111:
+            ddivu(instruction);
+            return;
+
         case 0b100000:
             add(instruction);
             return;
@@ -279,6 +303,14 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         case 0b101011:
             sltu(instruction);
+            return;
+
+        case 0b101100:
+            dadd(instruction);
+            return;
+
+        case 0b101101:
+            daddu(instruction);
             return;
 
         case 0b111000:
@@ -330,7 +362,7 @@ void VR4300::add(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("add ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
-    m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
+    m_gprs[rd] = static_cast<s32>(m_gprs[rs] + m_gprs[rt]);
 }
 
 void VR4300::addi(const u32 instruction) {
@@ -469,6 +501,15 @@ void VR4300::cache(const u32 instruction) {
     LWARN("CACHE is stubbed");
 }
 
+void VR4300::dadd(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dadd ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
+}
+
 void VR4300::daddi(const u32 instruction) {
     // FIXME: An integer overflow exception occurs if carries out of
     //        bits 62 and 63 differ (2’s complement overflow).  The
@@ -494,6 +535,123 @@ void VR4300::daddiu(const u32 instruction) {
     LTRACE_VR4300("daddiu ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
     m_gprs[rt] = m_gprs[rs] + s16(imm);
+}
+
+void VR4300::daddu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("daddu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
+}
+
+void VR4300::ddiv(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("ddiv ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const s64 numerator = m_gprs[rs];
+    const s64 denominator = m_gprs[rt];
+
+    if (denominator == 0 && numerator > 0) {
+        m_lo = -1;
+        m_hi = numerator;
+    } else if (denominator == 0 && numerator < 0) {
+        m_lo = 1;
+        m_hi = numerator;
+    } else if (numerator == std::numeric_limits<s64>::min() && denominator == -1) {
+        m_lo = std::numeric_limits<s64>::min();
+        m_hi = 0;
+    } else [[likely]] {
+        m_lo = numerator / denominator;
+        m_hi = numerator % denominator;
+    }
+}
+
+void VR4300::ddivu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("ddivu ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const u64 numerator = m_gprs[rs];
+    const u64 denominator = m_gprs[rt];
+
+    if (denominator == 0 && numerator > 0) {
+        m_lo = -1;
+        m_hi = numerator;
+    } else if (denominator == 0 && numerator == 0) {
+        UNIMPLEMENTED();
+    } else [[likely]] {
+        m_lo = numerator / denominator;
+        m_hi = numerator % denominator;
+    }
+}
+
+void VR4300::div(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("div ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const s32 numerator = m_gprs[rs];
+    const s32 denominator = m_gprs[rt];
+
+    if (denominator == 0 && numerator > 0) {
+        m_lo = -1;
+        m_hi = numerator;
+    } else if (denominator == 0 && numerator < 0) {
+        m_lo = 1;
+        m_hi = numerator;
+    } else if (numerator == std::numeric_limits<s32>::min() && denominator == -1) {
+        m_lo = std::numeric_limits<s32>::min();
+        m_hi = 0;
+    } else [[likely]] {
+        m_lo = numerator / denominator;
+        m_hi = numerator % denominator;
+    }
+}
+
+void VR4300::divu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("divu ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const u32 numerator = m_gprs[rs];
+    const u32 denominator = m_gprs[rt];
+
+    if (denominator == 0 && numerator > 0) {
+        m_lo = -1;
+        m_hi = numerator;
+    } else if (denominator == 0 && numerator == 0) {
+        UNIMPLEMENTED();
+    } else [[likely]] {
+        m_lo = numerator / denominator;
+        m_hi = numerator % denominator;
+    }
+}
+
+void VR4300::dmult(const u32 instruction) {
+    // FIXME: edge cases
+
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("dmult ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const s128 result = static_cast<s128>(static_cast<s64>(m_gprs[rs])) * static_cast<s128>(static_cast<s64>(m_gprs[rt]));
+    m_hi = static_cast<s64>(Common::bit_range<127, 64>(result));
+    m_lo = static_cast<s64>(Common::bit_range<63, 0>(result));
+}
+
+void VR4300::dmultu(const u32 instruction) {
+    // FIXME: edge cases
+
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("dmultu ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const u128 result = static_cast<u128>(m_gprs[rs]) * static_cast<u128>(m_gprs[rt]);
+    m_hi = static_cast<s64>(Common::bit_range<127, 64>(result));
+    m_lo = static_cast<s64>(Common::bit_range<63, 0>(result));
 }
 
 void VR4300::dsll(const u32 instruction) {

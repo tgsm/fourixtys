@@ -80,8 +80,16 @@ private:
     void bne(u32 instruction);
     void bnel(u32 instruction);
     void cache(u32 instruction);
+    void dadd(u32 instruction);
     void daddi(u32 instruction);
     void daddiu(u32 instruction);
+    void daddu(u32 instruction);
+    void ddiv(u32 instruction);
+    void ddivu(u32 instruction);
+    void div(u32 instruction);
+    void divu(u32 instruction);
+    void dmult(u32 instruction);
+    void dmultu(u32 instruction);
     void dsll(u32 instruction);
     void dsllv(u32 instruction);
     void dsll32(u32 instruction);
