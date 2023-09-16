@@ -93,7 +93,12 @@ private:
     void dsll(u32 instruction);
     void dsllv(u32 instruction);
     void dsll32(u32 instruction);
+    void dsra(u32 instruction);
+    void dsrav(u32 instruction);
     void dsra32(u32 instruction);
+    void dsrl(u32 instruction);
+    void dsrlv(u32 instruction);
+    void dsrl32(u32 instruction);
     void dsub(u32 instruction);
     void dsubu(u32 instruction);
     void j(u32 instruction);
