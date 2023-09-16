@@ -156,6 +156,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             lb(instruction);
             return;
 
+        case 0b100001:
+            lh(instruction);
+            return;
+
         case 0b100011:
             lw(instruction);
             return;
@@ -170,6 +174,14 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b100111:
             lwu(instruction);
+            return;
+
+        case 0b101000:
+            sb(instruction);
+            return;
+
+        case 0b101001:
+            sh(instruction);
             return;
 
         case 0b101011:
@@ -241,6 +253,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             dsllv(instruction);
             return;
 
+        case 0b011000:
+            mult(instruction);
+            return;
+
         case 0b011001:
             multu(instruction);
             return;
@@ -277,6 +293,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             addu(instruction);
             return;
 
+        case 0b100010:
+            sub(instruction);
+            return;
+
         case 0b100011:
             subu(instruction);
             return;
@@ -311,6 +331,14 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         case 0b101101:
             daddu(instruction);
+            return;
+
+        case 0b101110:
+            dsub(instruction);
+            return;
+
+        case 0b101111:
+            dsubu(instruction);
             return;
 
         case 0b111000:
@@ -690,6 +718,24 @@ void VR4300::dsra32(const u32 instruction) {
     m_gprs[rd] = static_cast<s64>(m_gprs[rt]) >> (32 + sa);
 }
 
+void VR4300::dsub(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dsub ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] - m_gprs[rt];
+}
+
+void VR4300::dsubu(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dsubu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = m_gprs[rs] - m_gprs[rt];
+}
+
 void VR4300::j(const u32 instruction) {
     const auto target = Common::bit_range<25, 0>(instruction);
     const u32 destination = (m_pc & 0xF0000000) | (target << 2);
@@ -767,6 +813,18 @@ void VR4300::ld(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read64(address);
 }
 
+void VR4300::lh(const u32 instruction) {
+    // TODO: exceptions
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const u16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lh ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_gprs[rt] = static_cast<s16>(m_system.mmu().read16(address));
+}
+
 void VR4300::lhu(const u32 instruction) {
     // TODO: exceptions
 
@@ -833,6 +891,18 @@ void VR4300::mtc0(const u32 instruction) {
     LWARN("MTC0 is stubbed");
 }
 
+void VR4300::mult(const u32 instruction) {
+    // FIXME: edge cases
+
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    LTRACE_VR4300("mult ${}, ${}", reg_name(rs), reg_name(rt));
+
+    const s64 result = m_gprs[rs] * m_gprs[rt];
+    m_hi = static_cast<s32>(Common::bit_range<63, 32>(result));
+    m_lo = static_cast<s32>(Common::bit_range<31, 0>(result));
+}
+
 void VR4300::multu(const u32 instruction) {
     // FIXME: edge cases
 
@@ -876,16 +946,36 @@ void VR4300::ori(const u32 instruction) {
     m_gprs[rt] = m_gprs[rs] | imm;
 }
 
+void VR4300::sb(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sb ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_system.mmu().write8(address, m_gprs[rt]);
+}
+
 void VR4300::sd(const u32 instruction) {
     // FIXME: If either of the low-order three bits of the address are not zero, an address error exception occurs.
 
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
     const s16 offset = Common::bit_range<15, 0>(instruction);
-    LTRACE_VR4300("sw ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+    LTRACE_VR4300("sd ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write64(address, m_gprs[rt]);
+}
+
+void VR4300::sh(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sh ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_system.mmu().write16(address, m_gprs[rt]);
 }
 
 void VR4300::sll(const u32 instruction) {
@@ -981,6 +1071,15 @@ void VR4300::srlv(const u32 instruction) {
     LTRACE_VR4300("srlv ${}, ${}, {}", reg_name(rd), reg_name(rt), reg_name(rs));
 
     m_gprs[rd] = static_cast<s32>(static_cast<u32>(m_gprs[rt]) >> Common::lowest_bits(m_gprs[rs], 5));
+}
+
+void VR4300::sub(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("sub ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
+
+    m_gprs[rd] = static_cast<s32>(m_gprs[rs] - m_gprs[rt]);
 }
 
 void VR4300::subu(const u32 instruction) {

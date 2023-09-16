@@ -94,6 +94,8 @@ private:
     void dsllv(u32 instruction);
     void dsll32(u32 instruction);
     void dsra32(u32 instruction);
+    void dsub(u32 instruction);
+    void dsubu(u32 instruction);
     void j(u32 instruction);
     void jal(u32 instruction);
     void jalr(u32 instruction);
@@ -101,6 +103,7 @@ private:
     void lb(u32 instruction);
     void lbu(u32 instruction);
     void ld(u32 instruction);
+    void lh(u32 instruction);
     void lhu(u32 instruction);
     void lui(u32 instruction);
     void lw(u32 instruction);
@@ -108,12 +111,15 @@ private:
     void mfhi(u32 instruction);
     void mflo(u32 instruction);
     void mtc0(u32 instruction);
+    void mult(u32 instruction);
     void multu(u32 instruction);
     void nop(u32 instruction);
     void nor(u32 instruction);
     void or_(u32 instruction);
     void ori(u32 instruction);
+    void sb(u32 instruction);
     void sd(u32 instruction);
+    void sh(u32 instruction);
     void sll(u32 instruction);
     void sllv(u32 instruction);
     void slt(u32 instruction);
@@ -124,6 +130,7 @@ private:
     void srav(u32 instruction);
     void srl(u32 instruction);
     void srlv(u32 instruction);
+    void sub(u32 instruction);
     void subu(u32 instruction);
     void sw(u32 instruction);
     void xor_(u32 instruction);
