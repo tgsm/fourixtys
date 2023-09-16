@@ -217,6 +217,11 @@ void MMU::write(const u32 address, const T value) {
             if constexpr (Common::TypeIsSame<T, u8>) {
                 m_rdram.at(address - RDRAM_BUILTIN_BASE) = value;
                 return;
+            } else if constexpr (Common::TypeIsSame<T, u16>) {
+                const u32 idx = address - RDRAM_BUILTIN_BASE;
+                m_rdram.at(idx + 0) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_rdram.at(idx + 1) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
             } else if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - RDRAM_BUILTIN_BASE;
                 m_rdram.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
