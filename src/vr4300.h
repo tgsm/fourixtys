@@ -93,6 +93,8 @@ private:
     void bne(u32 instruction);
     void bnel(u32 instruction);
     void cache(u32 instruction);
+    void cfc1(u32 instruction);
+    void ctc1(u32 instruction);
     void dadd(u32 instruction);
     void daddi(u32 instruction);
     void daddiu(u32 instruction);

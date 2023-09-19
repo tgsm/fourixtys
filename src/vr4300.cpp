@@ -451,6 +451,14 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
 void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
     const auto op = Common::bit_range<25, 21>(instruction);
     switch (op) {
+        case 0b00010:
+            cfc1(instruction);
+            return;
+
+        case 0b00110:
+            cfc1(instruction);
+            return;
+
         default:
             UNIMPLEMENTED_MSG("unrecognized FPU op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
@@ -599,6 +607,30 @@ void VR4300::cache(const u32 instruction) {
     LTRACE_VR4300("cache {}, 0x{:04X}(${})", op, offset, reg_name(base));
 
     LWARN("CACHE is stubbed");
+}
+
+void VR4300::cfc1(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("cfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    if (fs == 31) {
+        m_gprs[rt] = m_cop1.fcr31.raw;
+    } else {
+        UNIMPLEMENTED();
+    }
+}
+
+void VR4300::ctc1(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("ctc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    if (fs == 31) {
+        m_cop1.fcr31.raw = m_gprs[rt];
+    } else {
+        UNIMPLEMENTED();
+    }
 }
 
 void VR4300::dadd(const u32 instruction) {
