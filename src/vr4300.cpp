@@ -152,12 +152,24 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             daddiu(instruction);
             return;
 
+        case 0b011010:
+            ldl(instruction);
+            return;
+
+        case 0b011011:
+            ldr(instruction);
+            return;
+
         case 0b100000:
             lb(instruction);
             return;
 
         case 0b100001:
             lh(instruction);
+            return;
+
+        case 0b100010:
+            lwl(instruction);
             return;
 
         case 0b100011:
@@ -172,6 +184,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             lhu(instruction);
             return;
 
+        case 0b100110:
+            lwr(instruction);
+            return;
+
         case 0b100111:
             lwu(instruction);
             return;
@@ -184,8 +200,24 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             sh(instruction);
             return;
 
+        case 0b101010:
+            swl(instruction);
+            return;
+
         case 0b101011:
             sw(instruction);
+            return;
+
+        case 0b101100:
+            sdl(instruction);
+            return;
+
+        case 0b101101:
+            sdr(instruction);
+            return;
+
+        case 0b101110:
+            swr(instruction);
             return;
 
         case 0b101111:
@@ -878,6 +910,36 @@ void VR4300::ld(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read64(address);
 }
 
+void VR4300::ldl(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("ldl ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u64 address = m_gprs[base] + (offset & ~0x7);
+    const u8 bits = (offset & 0x7) * 8;
+
+    u64 value = m_system.mmu().read64(address) << bits;
+    value |= Common::lowest_bits(m_gprs[rt], bits);
+
+    m_gprs[rt] = value;
+}
+
+void VR4300::ldr(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("ldr ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u64 address = m_gprs[base] + (offset & ~0x7);
+    const u8 bits = (7 - (offset & 0x7)) * 8;
+
+    u64 value = Common::highest_bits(m_gprs[rt], bits);
+    value |= m_system.mmu().read64(address) >> bits;
+
+    m_gprs[rt] = value;
+}
+
 void VR4300::lh(const u32 instruction) {
     // TODO: exceptions
 
@@ -920,6 +982,46 @@ void VR4300::lw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + s16(offset);
     m_gprs[rt] = static_cast<s32>(m_system.mmu().read32(address));
+}
+
+void VR4300::lwl(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lwl ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    // Read from the next word if the offset's low 3 bits are greater than 4
+    u64 address = m_gprs[base];
+    if ((offset & 0x7) >= 4) {
+        address += 4;
+    }
+    const u8 bits = (offset & 0x7) * 8;
+
+    s32 value = m_system.mmu().read32(address);
+    value <<= bits;
+    value |= Common::lowest_bits(m_gprs[rt], bits);
+
+    m_gprs[rt] = value;
+}
+
+void VR4300::lwr(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lwr ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    // Read from the next word if the offset's low 3 bits are greater than 4
+    u64 address = m_gprs[base];
+    if ((offset & 0x7) >= 4) {
+        address += 4;
+    }
+    const u8 bits = (7 - (offset & 0x7)) * 8;
+
+    u32 value = m_system.mmu().read32(address);
+    value >>= bits;
+    value |= Common::highest_bits(m_gprs[rt], bits);
+
+    m_gprs[rt] = static_cast<s32>(value);
 }
 
 void VR4300::lwu(const u32 instruction) {
@@ -1031,6 +1133,36 @@ void VR4300::sd(const u32 instruction) {
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write64(address, m_gprs[rt]);
+}
+
+void VR4300::sdl(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sdl ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u64 address = m_gprs[base] + (offset & ~0x7);
+    const u8 bits = (offset & 0x7) * 8;
+
+    u64 value = Common::highest_bits(m_system.mmu().read64(address), bits);
+    value |= (m_gprs[rt] >> bits);
+
+    m_system.mmu().write64(address, value);
+}
+
+void VR4300::sdr(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sdr ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u64 address = m_gprs[base] + (offset & ~0x7);
+    const u8 bits = (7 - (offset & 0x7)) * 8;
+
+    u64 value = Common::lowest_bits(m_system.mmu().read64(address), bits);
+    value |= (m_gprs[rt] << bits);
+
+    m_system.mmu().write64(address, value);
 }
 
 void VR4300::sh(const u32 instruction) {
@@ -1166,6 +1298,46 @@ void VR4300::sw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write32(address, m_gprs[rt]);
+}
+
+void VR4300::swl(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("swl ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    // Read from the next word if the offset's low 3 bits are greater than 4
+    u64 address = m_gprs[base];
+    if ((offset & 0x7) >= 4) {
+        address += 4;
+    }
+    const u8 bits = (offset & 0x3) * 8;
+
+    u32 value = m_gprs[rt];
+    value >>= bits;
+    value |= Common::highest_bits(m_system.mmu().read32(address), bits);
+
+    m_system.mmu().write32(address, value);
+}
+
+void VR4300::swr(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("swr ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    // Read from the next word if the offset's low 3 bits are greater than 4
+    u64 address = m_gprs[base];
+    if ((offset & 0x7) >= 4) {
+        address += 4;
+    }
+    const u8 bits = (3 - (offset & 0x3)) * 8;
+
+    u32 value = m_gprs[rt];
+    value <<= bits;
+    value |= Common::lowest_bits(m_system.mmu().read32(address), bits);
+
+    m_system.mmu().write32(address, value);
 }
 
 void VR4300::xor_(const u32 instruction) {
