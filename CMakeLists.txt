@@ -19,6 +19,8 @@ set(SOURCES
     src/common/logging.h
     src/common/types.h
     src/frontend/frontend.h
+    src/cop0.cpp
+    src/cop0.h
     src/gamepak.cpp
     src/gamepak.h
     src/main.cpp

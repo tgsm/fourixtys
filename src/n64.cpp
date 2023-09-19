@@ -12,6 +12,7 @@ void N64::run() {
     static constexpr u32 CyclesStub = 3;
     m_scanline_cycles += CyclesStub;
     m_frame_cycles += CyclesStub;
+    m_vr4300.cop0().increment_cycle_count(CyclesStub);
 
     if (m_scanline_cycles >= CyclesPerHalfline) {
         m_scanline_cycles -= CyclesPerHalfline;

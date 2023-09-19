@@ -5,6 +5,7 @@
 #include "common/bits.h"
 #include "common/defines.h"
 #include "common/types.h"
+#include "cop0.h"
 
 using namespace std::string_view_literals;
 
@@ -16,8 +17,12 @@ public:
 
     void step();
 
+    COP0& cop0() { return m_cop0; }
+    const COP0& cop0() const { return m_cop0; }
+
 private:
     N64& m_system;
+    COP0 m_cop0;
 
     bool m_enable_trace_logging { false };
 
