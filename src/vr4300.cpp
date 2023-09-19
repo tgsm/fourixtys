@@ -431,6 +431,10 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
     const auto op = Common::bit_range<25, 21>(instruction);
 
     switch (op) {
+        case 0b00000:
+            mfc0(instruction);
+            return;
+
         case 0b00100:
             mtc0(instruction);
             return;
@@ -1040,6 +1044,14 @@ void VR4300::lwu(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read32(address);
 }
 
+void VR4300::mfc0(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("mfc0 ${}, ${}", reg_name(rt), rd);
+
+    m_gprs[rt] = m_cop0.get_reg(rd);
+}
+
 void VR4300::mfhi(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("mfhi ${}", reg_name(rd));
@@ -1059,7 +1071,7 @@ void VR4300::mtc0(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), rd);
 
-    LWARN("MTC0 is stubbed");
+    m_cop0.set_reg(rd, m_gprs[rt]);
 }
 
 void VR4300::mult(const u32 instruction) {

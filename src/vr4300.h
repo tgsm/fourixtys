@@ -122,6 +122,7 @@ private:
     void lwl(u32 instruction);
     void lwr(u32 instruction);
     void lwu(u32 instruction);
+    void mfc0(u32 instruction);
     void mfhi(u32 instruction);
     void mflo(u32 instruction);
     void mtc0(u32 instruction);
