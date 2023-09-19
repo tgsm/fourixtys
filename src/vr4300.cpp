@@ -273,6 +273,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             jalr(instruction);
             return;
 
+        case 0b001111:
+            sync(instruction);
+            return;
+
         case 0b010000:
             mfhi(instruction);
             return;
@@ -1338,6 +1342,11 @@ void VR4300::swr(const u32 instruction) {
     value |= Common::lowest_bits(m_system.mmu().read32(address), bits);
 
     m_system.mmu().write32(address, value);
+}
+
+void VR4300::sync(const u32 instruction) {
+    // No-op on the VR4300. Defined to maintain compatibility with the VR4400.
+    LTRACE_VR4300("sync");
 }
 
 void VR4300::xor_(const u32 instruction) {

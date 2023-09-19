@@ -146,6 +146,7 @@ private:
     void sw(u32 instruction);
     void swl(u32 instruction);
     void swr(u32 instruction);
+    void sync(u32 instruction);
     void xor_(u32 instruction);
     void xori(u32 instruction);
 };
