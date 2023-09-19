@@ -6,6 +6,7 @@
 #include "common/defines.h"
 #include "common/types.h"
 #include "cop0.h"
+#include "cop1.h"
 
 using namespace std::string_view_literals;
 
@@ -20,9 +21,15 @@ public:
     COP0& cop0() { return m_cop0; }
     const COP0& cop0() const { return m_cop0; }
 
+    COP1& cop1() { return m_cop1; }
+    const COP1& cop1() const { return m_cop1; }
+
+    u64 pc() const { return m_pc; }
+
 private:
     N64& m_system;
     COP0 m_cop0;
+    COP1 m_cop1;
 
     bool m_enable_trace_logging { false };
 
@@ -71,6 +78,7 @@ private:
     void decode_and_execute_special_instruction(u32 instruction);
     void decode_and_execute_regimm_instruction(u32 instruction);
     void decode_and_execute_cop0_instruction(u32 instruction);
+    void decode_and_execute_cop1_instruction(u32 instruction);
 
     void add(u32 instruction);
     void addi(u32 instruction);

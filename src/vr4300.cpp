@@ -2,7 +2,7 @@
 #include "vr4300.h"
 #include "n64.h"
 
-VR4300::VR4300(N64& system) : m_system(system) {
+VR4300::VR4300(N64& system) : m_system(system), m_cop1(*this) {
     simulate_pif_routine();
 }
 
@@ -82,6 +82,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b010000:
             decode_and_execute_cop0_instruction(instruction);
+            return;
+
+        case 0b010001:
+            decode_and_execute_cop1_instruction(instruction);
             return;
 
         case 0b000010:
@@ -441,6 +445,14 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
 
         default:
             UNIMPLEMENTED_MSG("unrecognized COP0 op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
+    }
+}
+
+void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
+    const auto op = Common::bit_range<25, 21>(instruction);
+    switch (op) {
+        default:
+            UNIMPLEMENTED_MSG("unrecognized FPU op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
 }
 
