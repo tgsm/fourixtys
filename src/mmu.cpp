@@ -80,6 +80,8 @@ static constexpr u32 PIF_BOOTROM_END           = 0x1FC007BF;
 static constexpr u32 PIF_RAM_BASE              = 0x1FC007C0;
 static constexpr u32 PIF_RAM_END               = 0x1FC007FF;
 
+MMU::MMU(N64& system) : m_system(system), m_pi(*this), m_mi(system.vr4300()) {}
+
 constexpr MMU::AddressRanges MMU::address_range(const u32 virtual_address) {
     if (virtual_address < KSEG0_BASE) {
         return AddressRanges::User;
@@ -168,6 +170,18 @@ T MMU::read(const u32 address) {
                        m_sp_imem.at(idx + 3) << 0;
             } else {
                 UNIMPLEMENTED_MSG("Unrecognized read{} from SP imem", Common::TypeSizeInBits<T>);
+            }
+
+        case MI_REGISTERS_BASE ... MI_REGISTERS_END:
+            switch (address) {
+                case MI_REG_INTR:
+                    return m_mi.interrupt();
+                case MI_REG_INTR_MASK:
+                    return m_mi.interrupt_mask();
+
+                default:
+                    LERROR("Unrecognized read{} from MI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    return T(-1);
             }
 
         case VI_REGISTERS_BASE ... VI_REGISTERS_END:
@@ -269,6 +283,19 @@ void MMU::write(const u32 address, const T value) {
                 return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP imem", Common::TypeSizeInBits<T>, value);
+            }
+
+        case MI_REGISTERS_BASE ... MI_REGISTERS_END:
+            switch (address) {
+                case MI_REG_MODE:
+                    m_mi.set_mode(value);
+                    return;
+                case MI_REG_INTR_MASK:
+                    m_mi.set_interrupt_mask(value);
+                    return;
+                default:
+                    LERROR("Unrecognized write{} 0x{:08X} to MI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    return;
             }
 
         case VI_REGISTERS_BASE ... VI_REGISTERS_END:

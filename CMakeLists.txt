@@ -26,6 +26,8 @@ set(SOURCES
     src/gamepak.cpp
     src/gamepak.h
     src/main.cpp
+    src/mi.cpp
+    src/mi.h
     src/mmu.cpp
     src/mmu.h
     src/n64.cpp

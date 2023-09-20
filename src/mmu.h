@@ -2,6 +2,7 @@
 
 #include <array>
 #include "common/types.h"
+#include "mi.h"
 #include "pi.h"
 #include "vi.h"
 
@@ -9,7 +10,7 @@ class N64;
 
 class MMU {
 public:
-    explicit MMU(N64& system) : m_system(system), m_pi(*this) {}
+    explicit MMU(N64& system);
 
     enum class AddressRanges {
         User,
@@ -44,6 +45,7 @@ public:
 private:
     N64& m_system;
     PI m_pi;
+    MI m_mi;
     VI m_vi;
 
     std::array<u8, 0x400000> m_rdram {};
