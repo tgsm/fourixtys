@@ -209,7 +209,17 @@ T MMU::read(const u32 address) {
                 case PI_REG_STATUS:
                     return m_pi.status();
                 default:
-                    UNIMPLEMENTED_MSG("Unrecognized read{} from PI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    LERROR("Unrecognized read{} from PI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    return T(-1);
+            }
+
+        case SI_REGISTERS_BASE ... SI_REGISTERS_END:
+            switch (address) {
+                case 0x04800018:
+                    return 0;
+                default:
+                    LERROR("Unrecognized read{} from SI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    return T(-1);
             }
 
         case 0x10000000 ... 0x1FBFFFFF:
