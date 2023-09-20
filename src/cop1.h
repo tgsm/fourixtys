@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <bit>
 #include <string_view>
 #include "common/bits.h"
 #include "common/defines.h"
@@ -13,7 +12,7 @@ class COP1 {
 public:
     explicit COP1(VR4300& vr4300) : m_vr4300(vr4300) {}
 
-    static std::string_view reg_name(u32 reg);
+    static std::string reg_name(u32 reg);
 
     enum class Conditions {
         UN,
@@ -49,6 +48,7 @@ public:
     };
     static char fmt_name(Format fmt);
 
+    f64 get_reg(u32 reg) const { return m_fprs[reg]; }
     void set_reg(u32 reg, u64 value) {
         m_fprs[reg] = std::bit_cast<f64>(value);
     }
@@ -83,8 +83,8 @@ private:
         } flags;
     } fcr31;
 
-    static ALWAYS_INLINE u8 get_fmt(const u32 instruction) {
-        return Common::bit_range<25, 21>(instruction);
+    static ALWAYS_INLINE Format get_fmt(const u32 instruction) {
+        return static_cast<Format>(Common::bit_range<25, 21>(instruction));
     }
 
     static ALWAYS_INLINE u8 get_ft(const u32 instruction) {
@@ -102,4 +102,8 @@ private:
     static ALWAYS_INLINE u8 get_function(const u32 instruction) {
         return Common::bit_range<5, 0>(instruction);
     }
+
+    void cvt_d(u32 instruction);
+    void cvt_s(u32 instruction);
+    void div(u32 instruction);
 };
