@@ -501,22 +501,42 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
 }
 
 void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
-    const auto op = Common::bit_range<25, 21>(instruction);
+    if (!Common::is_bit_enabled<25>(instruction)) {
+        const auto ct_op = Common::bit_range<25, 21>(instruction);
+        switch (ct_op) {
+            case 0b00010:
+                cfc1(instruction);
+                return;
+
+            case 0b00100:
+                mtc1(instruction);
+                return;
+
+            case 0b00110:
+                cfc1(instruction);
+                return;
+
+            default:
+                UNIMPLEMENTED_MSG("unrecognized FPU CT op {:05b} (instr={:08X}, pc={:016X})", ct_op, instruction, m_pc);
+        }
+    }
+
+    const auto op = Common::bit_range<5, 0>(instruction);
     switch (op) {
-        case 0b00010:
-            cfc1(instruction);
+        case 0b000011:
+            m_cop1.div(instruction);
             return;
 
-        case 0b00100:
-            mtc1(instruction);
+        case 0b100000:
+            m_cop1.cvt_s(instruction);
             return;
 
-        case 0b00110:
-            cfc1(instruction);
+        case 0b100001:
+            m_cop1.cvt_d(instruction);
             return;
 
         default:
-            UNIMPLEMENTED_MSG("unrecognized FPU op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
+            UNIMPLEMENTED_MSG("unrecognized FPU op {:06b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
 }
 
