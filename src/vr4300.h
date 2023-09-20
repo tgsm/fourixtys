@@ -90,6 +90,7 @@ private:
     void beql(u32 instruction);
     void bgez(u32 instruction);
     void bgezal(u32 instruction);
+    void bgezl(u32 instruction);
     void bgtz(u32 instruction);
     void blez(u32 instruction);
     void bne(u32 instruction);
@@ -126,12 +127,14 @@ private:
     void lb(u32 instruction);
     void lbu(u32 instruction);
     void ld(u32 instruction);
+    void ldc1(u32 instruction);
     void ldl(u32 instruction);
     void ldr(u32 instruction);
     void lh(u32 instruction);
     void lhu(u32 instruction);
     void lui(u32 instruction);
     void lw(u32 instruction);
+    void lwc1(u32 instruction);
     void lwl(u32 instruction);
     void lwr(u32 instruction);
     void lwu(u32 instruction);
@@ -150,6 +153,7 @@ private:
     void ori(u32 instruction);
     void sb(u32 instruction);
     void sd(u32 instruction);
+    void sdc1(u32 instruction);
     void sdl(u32 instruction);
     void sdr(u32 instruction);
     void sh(u32 instruction);
@@ -166,6 +170,7 @@ private:
     void sub(u32 instruction);
     void subu(u32 instruction);
     void sw(u32 instruction);
+    void swc1(u32 instruction);
     void swl(u32 instruction);
     void swr(u32 instruction);
     void sync(u32 instruction);

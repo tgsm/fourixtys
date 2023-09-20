@@ -232,8 +232,24 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             cache(instruction);
             return;
 
+        case 0b110001:
+            lwc1(instruction);
+            return;
+
+        case 0b110101:
+            ldc1(instruction);
+            return;
+
         case 0b110111:
             ld(instruction);
+            return;
+
+        case 0b111001:
+            swc1(instruction);
+            return;
+
+        case 0b111101:
+            sdc1(instruction);
             return;
 
         case 0b111111:
@@ -438,6 +454,10 @@ void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
             bgez(instruction);
             return;
 
+        case 0b00011:
+            bgezl(instruction);
+            return;
+
         case 0b10001:
             bgezal(instruction);
             return;
@@ -605,6 +625,20 @@ void VR4300::bgezal(const u32 instruction) {
     if (static_cast<s64>(m_gprs[rs]) >= 0) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
+    }
+}
+
+void VR4300::bgezl(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bgezl ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) >= 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    } else {
+        m_next_pc += 4;
     }
 }
 
@@ -1036,6 +1070,21 @@ void VR4300::ld(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read64(address);
 }
 
+void VR4300::ldc1(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto ft = m_cop1.get_ft(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("ldc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
+
+    const u64 doubleword = m_system.mmu().read64(m_gprs[base] + offset);
+
+    if (m_cop0.status.flags.fr) {
+        m_cop1.set_reg(ft, doubleword);
+    } else {
+        UNIMPLEMENTED();
+    }
+}
+
 void VR4300::ldl(const u32 instruction) {
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
@@ -1108,6 +1157,29 @@ void VR4300::lw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + s16(offset);
     m_gprs[rt] = static_cast<s32>(m_system.mmu().read32(address));
+}
+
+void VR4300::lwc1(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto ft = m_cop1.get_ft(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("lwc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
+
+    const u32 word = m_system.mmu().read32(m_gprs[base] + offset);
+
+    if (m_cop0.status.flags.fr) {
+        m_cop1.set_reg(ft, word);
+    } else {
+        if (ft % 2 == 0) {
+            u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(ft)), 32);
+            double_bits |= word;
+            m_cop1.set_reg(ft, double_bits);
+        } else {
+            u64 double_bits = Common::lowest_bits(std::bit_cast<u64>(m_cop1.get_reg(ft - 1)), 32);
+            double_bits |= (static_cast<u64>(word) << 32);
+            m_cop1.set_reg(ft, double_bits);
+        }
+    }
 }
 
 void VR4300::lwl(const u32 instruction) {
@@ -1303,6 +1375,19 @@ void VR4300::sd(const u32 instruction) {
     m_system.mmu().write64(address, m_gprs[rt]);
 }
 
+void VR4300::sdc1(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto ft = m_cop1.get_ft(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sdc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
+
+    if (m_cop0.status.flags.fr) {
+        m_system.mmu().write64(m_gprs[base] + offset, std::bit_cast<u64>(m_cop1.get_reg(ft)));
+    } else {
+        UNIMPLEMENTED();
+    }
+}
+
 void VR4300::sdl(const u32 instruction) {
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
@@ -1466,6 +1551,20 @@ void VR4300::sw(const u32 instruction) {
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write32(address, m_gprs[rt]);
+}
+
+void VR4300::swc1(const u32 instruction) {
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto ft = m_cop1.get_ft(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("swc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
+
+    if (m_cop0.status.flags.fr) {
+        const f32 float_bits = Common::bit_cast_f64_to_f32(m_cop1.get_reg(ft));
+        m_system.mmu().write32(m_gprs[base] + offset, std::bit_cast<u32>(float_bits));
+    } else {
+        UNIMPLEMENTED();
+    }
 }
 
 void VR4300::swl(const u32 instruction) {
