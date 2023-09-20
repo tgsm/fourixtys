@@ -104,6 +104,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             bne(instruction);
             return;
 
+        case 0b000110:
+            blez(instruction);
+            return;
+
         case 0b000111:
             bgtz(instruction);
             return;
@@ -285,8 +289,16 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             mfhi(instruction);
             return;
 
+        case 0b010001:
+            mthi(instruction);
+            return;
+
         case 0b010010:
             mflo(instruction);
+            return;
+
+        case 0b010011:
+            mtlo(instruction);
             return;
 
         case 0b010100:
@@ -422,6 +434,10 @@ void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
     const auto op = Common::bit_range<20, 16>(instruction);
 
     switch (op) {
+        case 0b00001:
+            bgez(instruction);
+            return;
+
         case 0b10001:
             bgezal(instruction);
             return;
@@ -432,6 +448,22 @@ void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
 }
 
 void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
+    if (Common::is_bit_enabled<25>(instruction)) {
+        const auto op = Common::bit_range<5, 0>(instruction);
+        switch (op) {
+            case 0b000010:
+                tlbwi(instruction);
+                return;
+
+            case 0b011000:
+                eret(instruction);
+                return;
+
+            default:
+                UNIMPLEMENTED_MSG("unrecognized COP0 CO op {:06b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
+        }
+    }
+
     const auto op = Common::bit_range<25, 21>(instruction);
 
     switch (op) {
@@ -453,6 +485,10 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
     switch (op) {
         case 0b00010:
             cfc1(instruction);
+            return;
+
+        case 0b00100:
+            mtc1(instruction);
             return;
 
         case 0b00110:
@@ -546,6 +582,18 @@ void VR4300::beql(const u32 instruction) {
     }
 }
 
+void VR4300::bgez(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bgez ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) >= 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    }
+}
+
 void VR4300::bgezal(const u32 instruction) {
     const auto rs = get_rs(instruction);
     [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
@@ -567,6 +615,18 @@ void VR4300::bgtz(const u32 instruction) {
     LTRACE_VR4300("bgtz ${}, 0x{:04X}", reg_name(rs), new_pc);
 
     if (static_cast<s64>(m_gprs[rs]) > 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    }
+}
+
+void VR4300::blez(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("blez ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) <= 0) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
@@ -885,6 +945,20 @@ void VR4300::dsubu(const u32 instruction) {
     m_gprs[rd] = m_gprs[rs] - m_gprs[rt];
 }
 
+void VR4300::eret(const u32 instruction) {
+    LTRACE_VR4300("eret");
+
+    if (m_cop0.status.flags.erl) {
+        m_cop0.error_epc = m_pc;
+        m_cop0.status.flags.erl = false;
+    } else {
+        m_pc = m_cop0.epc;
+        m_next_pc = m_pc + 4;
+        m_cop0.status.flags.exl = false;
+    }
+    // FIXME: Clear the LL bit to zero.
+}
+
 void VR4300::j(const u32 instruction) {
     const auto target = Common::bit_range<25, 0>(instruction);
     const u32 destination = (m_pc & 0xF0000000) | (target << 2);
@@ -1116,6 +1190,33 @@ void VR4300::mtc0(const u32 instruction) {
     LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), rd);
 
     m_cop0.set_reg(rd, m_gprs[rt]);
+}
+
+void VR4300::mtc1(const u32 instruction) {
+    m_enable_trace_logging = true;
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("mtc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    if (m_cop0.status.flags.fr) {
+        UNIMPLEMENTED();
+    } else {
+        m_cop1.set_reg(fs, static_cast<u32>(m_gprs[rt]));
+    }
+}
+
+void VR4300::mthi(const u32 instruction) {
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("mthi ${}", reg_name(rd));
+
+    m_hi = m_gprs[rd];
+}
+
+void VR4300::mtlo(const u32 instruction) {
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("mtlo ${}", reg_name(rd));
+
+    m_lo = m_gprs[rd];
 }
 
 void VR4300::mult(const u32 instruction) {
@@ -1403,6 +1504,12 @@ void VR4300::swr(const u32 instruction) {
 void VR4300::sync(const u32 instruction) {
     // No-op on the VR4300. Defined to maintain compatibility with the VR4400.
     LTRACE_VR4300("sync");
+}
+
+void VR4300::tlbwi(const u32 instruction) {
+    LTRACE_VR4300("tlbwi");
+
+    LWARN("TLBWI is stubbed");
 }
 
 void VR4300::xor_(const u32 instruction) {
