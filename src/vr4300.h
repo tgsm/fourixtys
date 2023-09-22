@@ -48,6 +48,8 @@ public:
     u64 pc() const { return m_pc; }
 
 private:
+    friend class COP1;
+
     N64& m_system;
     COP0 m_cop0;
     COP1 m_cop1;

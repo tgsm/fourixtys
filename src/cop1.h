@@ -67,7 +67,7 @@ private:
             u32 implementation : 8;
             u32 : 16;
         } flags;
-    } fcr0;
+    } m_fcr0;
 
     union {
         u32 raw {};
@@ -81,7 +81,9 @@ private:
             bool fs : 1;
             u32 : 7;
         } flags;
-    } fcr31;
+    } m_fcr31;
+
+    bool m_condition_signal { false };
 
     static ALWAYS_INLINE Format get_fmt(const u32 instruction) {
         return static_cast<Format>(Common::bit_range<25, 21>(instruction));
@@ -103,7 +105,15 @@ private:
         return Common::bit_range<5, 0>(instruction);
     }
 
+    void add(u32 instruction);
+    void bc1t(u32 instruction);
+    void bc1tl(u32 instruction);
+    void c_eq(u32 instruction);
+    void c_le(u32 instruction);
+    void c_un(u32 instruction);
     void cvt_d(u32 instruction);
     void cvt_s(u32 instruction);
     void div(u32 instruction);
+    void sub(u32 instruction);
+    void trunc_w(u32 instruction);
 };

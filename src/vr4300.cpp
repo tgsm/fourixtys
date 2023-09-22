@@ -572,6 +572,21 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
                 cfc1(instruction);
                 return;
 
+            case 0b01000: {
+                const auto bc_op = Common::bit_range<20, 16>(instruction);
+                switch (bc_op) {
+                    case 0b00001:
+                        m_cop1.bc1t(instruction);
+                        return;
+                    case 0b00011:
+                        m_cop1.bc1tl(instruction);
+                        return;
+
+                    default:
+                        UNIMPLEMENTED_MSG("unrecognized FPU BC op {:05b} (instr={:08X}, pc={:016X})", bc_op, instruction, m_pc);
+                }
+            }
+
             default:
                 UNIMPLEMENTED_MSG("unrecognized FPU CT op {:05b} (instr={:08X}, pc={:016X})", ct_op, instruction, m_pc);
         }
@@ -579,8 +594,20 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
 
     const auto op = Common::bit_range<5, 0>(instruction);
     switch (op) {
+        case 0b000000:
+            m_cop1.add(instruction);
+            return;
+
+        case 0b000001:
+            m_cop1.sub(instruction);
+            return;
+
         case 0b000011:
             m_cop1.div(instruction);
+            return;
+
+        case 0b001101:
+            m_cop1.trunc_w(instruction);
             return;
 
         case 0b100000:
@@ -589,6 +616,18 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
 
         case 0b100001:
             m_cop1.cvt_d(instruction);
+            return;
+
+        case 0b110001:
+            m_cop1.c_un(instruction);
+            return;
+
+        case 0b110010:
+            m_cop1.c_eq(instruction);
+            return;
+
+        case 0b111110:
+            m_cop1.c_le(instruction);
             return;
 
         default:
@@ -797,7 +836,7 @@ void VR4300::cfc1(const u32 instruction) {
     LTRACE_VR4300("cfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
     if (fs == 31) {
-        m_gprs[rt] = m_cop1.fcr31.raw;
+        m_gprs[rt] = m_cop1.m_fcr31.raw;
     } else {
         UNIMPLEMENTED();
     }
@@ -809,7 +848,7 @@ void VR4300::ctc1(const u32 instruction) {
     LTRACE_VR4300("ctc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
     if (fs == 31) {
-        m_cop1.fcr31.raw = m_gprs[rt];
+        m_cop1.m_fcr31.raw = m_gprs[rt];
     } else {
         UNIMPLEMENTED();
     }
