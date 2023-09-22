@@ -53,5 +53,6 @@ private:
     std::array<u8, 0x400000> m_rdram {};
     std::array<u8, 0x1000> m_sp_dmem {};
     std::array<u8, 0x1000> m_sp_imem {};
+    std::array<u8, 0x200> m_isviewer_buffer {};
     std::array<u8, 0x40> m_pif_ram {};
 };

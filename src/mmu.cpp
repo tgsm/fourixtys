@@ -74,6 +74,10 @@ static constexpr u32 RI_REGISTERS_END          = 0x047FFFFF;
 static constexpr u32 SI_REGISTERS_BASE         = 0x04800000;
 static constexpr u32 SI_REGISTERS_END          = 0x048FFFFF;
 
+static constexpr u32 ISVIEWER_REG_LENGTH       = 0x13FF0014;
+static constexpr u32 ISVIEWER_REG_BUFFER_BEGIN = 0x13FF0020;
+static constexpr u32 ISVIEWER_REG_BUFFER_END   = 0x13FF0220;
+
 static constexpr u32 PIF_BOOTROM_BASE          = 0x1FC00000;
 static constexpr u32 PIF_BOOTROM_END           = 0x1FC007BF;
 
@@ -356,7 +360,27 @@ void MMU::write(const u32 address, const T value) {
                     // FIXME: Reset DMA controller and stop any transfer being done if bit 0 is set.
                     return;
                 default:
-                    UNIMPLEMENTED_MSG("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    LERROR("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    return;
+            }
+
+        case ISVIEWER_REG_LENGTH:
+            for (std::size_t i = 0; i < value; i++) {
+                std::putchar(m_isviewer_buffer.at(i));
+            }
+            return;
+
+        case ISVIEWER_REG_BUFFER_BEGIN ... ISVIEWER_REG_BUFFER_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - ISVIEWER_REG_BUFFER_BEGIN;
+                m_isviewer_buffer.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
+                m_isviewer_buffer.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
+                m_isviewer_buffer.at(idx + 2) = static_cast<u8>(Common::bit_range<15, 8>(value));
+                m_isviewer_buffer.at(idx + 3) = static_cast<u8>(Common::bit_range<7, 0>(value));
+                return;
+            } else {
+                LWARN("unimplemented write{} 0x{:08X} to ISViewer (0x{:08X})", Common::TypeSizeInBits<T>, value, address);
+                return;
             }
 
         case PIF_RAM_BASE ... PIF_RAM_END:
