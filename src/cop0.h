@@ -19,6 +19,8 @@ public:
         cause.flags.ip &= ~(1 << InterruptBit);
     }
 
+    void set_cause_ip(u32 value) { cause.flags.ip = value; }
+
     [[nodiscard]] bool should_service_interrupt() const;
 
     [[nodiscard]] u64 get_reg(u8 reg) const;

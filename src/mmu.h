@@ -37,6 +37,8 @@ public:
     template <typename T>
     void write(u32 address, T value);
 
+    MI& mi() { return m_mi; }
+    const MI& mi() const { return m_mi; }
     VI& vi() { return m_vi; }
     const VI& vi() const { return m_vi; }
 

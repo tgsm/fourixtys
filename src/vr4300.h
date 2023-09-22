@@ -16,6 +16,27 @@ class VR4300 {
 public:
     explicit VR4300(N64& system);
 
+    enum class ExceptionCodes {
+        Interrupt = 0,
+        TLBModification = 1,
+        TLBMissLoad = 2,
+        TLBMissStore = 3,
+        AddressErrorLoad = 4,
+        AddressErrorStore = 5,
+        BusErrorInstructionFetch = 6,
+        BusErrorLoadStore = 7,
+        Syscall = 8,
+        Breakpoint = 9,
+        ReservedInstruction = 10,
+        CoprocessorUnusable = 11,
+        ArithmeticOverflow = 12,
+        Trap = 13,
+        FloatingPoint = 15,
+        Watch = 23,
+    };
+
+    void throw_exception(ExceptionCodes code);
+
     void step();
 
     COP0& cop0() { return m_cop0; }

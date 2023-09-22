@@ -322,6 +322,10 @@ void MMU::write(const u32 address, const T value) {
                 case VI_REG_V_INTR:
                     m_vi.set_interrupt_line(static_cast<u32>(value));
                     return;
+                case VI_REG_V_CURRENT:
+                    m_mi.cancel_interrupt(MI::InterruptFlags::VI);
+                    m_system.vr4300().cop0().set_cause_ip(m_mi.interrupt() & m_mi.interrupt_mask());
+                    return;
                 case VI_REG_V_START:
                     m_vi.set_vstart(static_cast<u32>(value));
                     return;

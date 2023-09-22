@@ -54,6 +54,40 @@ void VR4300::simulate_pif_routine() {
     m_next_pc = m_pc + 4;
 }
 
+// https://n64.readthedocs.io/index.html#exception-handling-process
+void VR4300::throw_exception(const ExceptionCodes code) {
+    // FIXME: 1. If the program counter is currently inside a branch delay slot, set the branch delay bit in $Cause (bit 31) to 1. Otherwise, set this bit to 0.
+    m_cop0.cause.flags.bd = false;
+
+    // 2. If the EXL bit is currently 0, set the $EPC register in COP0 to the current PC. Then, set the EXL bit to 1.
+    if (!m_cop0.status.flags.exl) {
+        m_cop0.epc = m_pc;
+        m_cop0.status.flags.exl = true;
+        // FIXME: A. If we are currently in a branch delay slot, instead set EPC to the address of the branch that we are currently in the delay slot of, i.e. current_pc - 4.
+    }
+
+    // 3. Set the exception code bit in the COP0 $Cause register to the code of the exception that was thrown.
+    m_cop0.cause.flags.exc_code = Common::underlying(code);
+
+    // FIXME: 4. If the coprocessor error is a defined value, i.e. for the coprocessor unusable exception, set the coprocessor error field in $Cause to the coprocessor that caused the error. Otherwise, the value of this field is undefined behavior in hardware, so it shouldn’t matter what you emulate this as.
+
+    // 5. Jump to the exception vector. A detailed description on how to find the correct exception vector is found on pages 180 through 181 of the manual, and described in less detail below.
+    //    A. Note that there is no “delay slot” executed when jumping to the exception vector, execution jumps there immediately.
+    // FIXME: Check for the BEV bit.
+    switch (code) {
+        case ExceptionCodes::TLBMissLoad:
+        case ExceptionCodes::TLBMissStore:
+        case ExceptionCodes::TLBModification:
+            UNIMPLEMENTED();
+        case ExceptionCodes::Interrupt:
+            m_pc = 0x80000180;
+            m_next_pc = m_pc + 4;
+            break;
+        default:
+            UNIMPLEMENTED_MSG("Exception code {}", Common::underlying(code));
+    }
+}
+
 void VR4300::step() {
     // Always reset the zero register, just in case
     m_gprs[0] = 0;
