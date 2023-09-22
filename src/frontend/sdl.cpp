@@ -42,6 +42,19 @@ void render_screen(const N64& n64) {
         case 0: // Blank
             break;
 
+        case 2:
+            g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_BGRA5551, SDL_TEXTUREACCESS_STATIC, width, height);
+            if (!g_texture) {
+                LERROR("Draw: failed to create SDL texture: {} (color_format={}, width={}, height={})", SDL_GetError(), color_format, width, height);
+                return;
+            }
+
+            SDL_UpdateTexture(g_texture, nullptr, n64.mmu().rdram().data() + origin, width * 2);
+            SDL_RenderCopy(g_renderer, g_texture, nullptr, nullptr);
+            SDL_RenderPresent(g_renderer);
+
+            break;
+
         case 3:
             g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, width, height);
             if (!g_texture) {
