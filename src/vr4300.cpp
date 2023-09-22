@@ -268,6 +268,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             cache(instruction);
             return;
 
+        case 0b110000:
+            ll(instruction);
+            return;
+
         case 0b110001:
             lwc1(instruction);
             return;
@@ -278,6 +282,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b110111:
             ld(instruction);
+            return;
+
+        case 0b111000:
+            sc(instruction);
             return;
 
         case 0b111001:
@@ -453,6 +461,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
             dsubu(instruction);
             return;
 
+        case 0b110100:
+            teq(instruction);
+            return;
+
         case 0b111000:
             dsll(instruction);
             return;
@@ -486,6 +498,10 @@ void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
     const auto op = Common::bit_range<20, 16>(instruction);
 
     switch (op) {
+        case 0b00000:
+            bltz(instruction);
+            return;
+
         case 0b00001:
             bgez(instruction);
             return;
@@ -540,6 +556,10 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
     if (!Common::is_bit_enabled<25>(instruction)) {
         const auto ct_op = Common::bit_range<25, 21>(instruction);
         switch (ct_op) {
+            case 0b00000:
+                mfc1(instruction);
+                return;
+
             case 0b00010:
                 cfc1(instruction);
                 return;
@@ -717,6 +737,18 @@ void VR4300::blez(const u32 instruction) {
     LTRACE_VR4300("blez ${}, 0x{:04X}", reg_name(rs), new_pc);
 
     if (static_cast<s64>(m_gprs[rs]) <= 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+    }
+}
+
+void VR4300::bltz(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bltz ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) < 0) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
@@ -1195,6 +1227,18 @@ void VR4300::lhu(const u32 instruction) {
     m_gprs[rt] = m_system.mmu().read16(address);
 }
 
+void VR4300::ll(const u32 instruction) {
+    // FIXME: This is just a copy-paste of LW. This instruction needs to be actually implemented.
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("ll ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + s16(offset);
+    m_gprs[rt] = static_cast<s32>(m_system.mmu().read32(address));
+}
+
 void VR4300::lui(u32 instruction) {
     const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
@@ -1298,6 +1342,22 @@ void VR4300::mfc0(const u32 instruction) {
     m_gprs[rt] = m_cop0.get_reg(rd);
 }
 
+void VR4300::mfc1(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("mfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    if (m_cop0.status.flags.fr) {
+        m_gprs[rt] = static_cast<u32>(std::bit_cast<u64>(m_cop1.get_reg(fs)));
+    } else {
+        if (fs % 2 == 0) {
+            m_gprs[rt] = Common::bit_range<31, 0>(std::bit_cast<u64>(m_cop1.get_reg(fs)));
+        } else {
+            m_gprs[rt] = Common::bit_range<63, 32>(std::bit_cast<u64>(m_cop1.get_reg(fs - 1)));
+        }
+    }
+}
+
 void VR4300::mfhi(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("mfhi ${}", reg_name(rd));
@@ -1315,7 +1375,7 @@ void VR4300::mflo(const u32 instruction) {
 void VR4300::mtc0(const u32 instruction) {
     const auto rt = get_rt(instruction);
     const auto rd = get_rd(instruction);
-    LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), rd);
+    LTRACE_VR4300("mtc0 ${}, ${}", reg_name(rt), m_cop0.get_reg_name(rd));
 
     m_cop0.set_reg(rd, m_gprs[rt]);
 }
@@ -1417,6 +1477,18 @@ void VR4300::sb(const u32 instruction) {
 
     const u32 address = m_gprs[base] + static_cast<s16>(offset);
     m_system.mmu().write8(address, m_gprs[rt]);
+}
+
+void VR4300::sc(const u32 instruction) {
+    // FIXME: This is just a copy-paste of SW. This instruction needs to be actually implemented.
+
+    const auto base = Common::bit_range<25, 21>(instruction);
+    const auto rt = get_rt(instruction);
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    LTRACE_VR4300("sc ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
+
+    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    m_system.mmu().write32(address, m_gprs[rt]);
 }
 
 void VR4300::sd(const u32 instruction) {
@@ -1666,6 +1738,17 @@ void VR4300::swr(const u32 instruction) {
 void VR4300::sync(const u32 instruction) {
     // No-op on the VR4300. Defined to maintain compatibility with the VR4400.
     LTRACE_VR4300("sync");
+}
+
+void VR4300::teq(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto code = Common::bit_range<15, 6>(instruction);
+    LTRACE_VR4300("teq ${}, ${} ({})", reg_name(rs), reg_name(rt), code);
+
+    if (m_gprs[rs] == m_gprs[rt]) {
+        throw_exception(ExceptionCodes::Trap);
+    }
 }
 
 void VR4300::tlbwi(const u32 instruction) {
