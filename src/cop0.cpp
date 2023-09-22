@@ -59,6 +59,8 @@ u64 COP0::get_reg(const u8 reg) const {
             return random;
         case 4:
             return context;
+        case 6:
+            return wired;
         case 8:
             return bad_vaddr;
         case 9:
