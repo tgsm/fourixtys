@@ -1386,7 +1386,9 @@ void VR4300::mtc1(const u32 instruction) {
     LTRACE_VR4300("mtc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
     if (m_cop0.status.flags.fr) {
-        UNIMPLEMENTED();
+        u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(fs)), 32);
+        double_bits |= static_cast<u32>(m_gprs[rt]);
+        m_cop1.set_reg(fs, double_bits);
     } else {
         if (fs % 2 == 0) {
             u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(fs)), 32);
