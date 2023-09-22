@@ -1603,7 +1603,7 @@ void VR4300::sltiu(const u32 instruction) {
     const s16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sltiu ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
-    m_gprs[rt] = ((m_gprs[rs] - imm) < static_cast<u64>(static_cast<s64>(imm)));
+    m_gprs[rt] = (m_gprs[rs] < static_cast<u64>(static_cast<s64>(imm)));
 }
 
 void VR4300::sltu(const u32 instruction) {
