@@ -200,6 +200,8 @@ T MMU::read(const u32 address) {
 
         case SP_REGISTERS_BASE ... SP_REGISTERS_END:
             switch (address) {
+                case 0x04040010: // RSP status
+                    return 1;
                 case 0x04080000: // RSP program counter
                     return 0;
 

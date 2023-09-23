@@ -43,6 +43,7 @@ void VR4300::simulate_pif_routine() {
     m_lo = 0x000000003103E121;
 
     m_cop0.status.raw = 0x34000000;
+    m_cop0.config = 0x7006E463;
 
     const u32 source_address = 0xB0000000;
     const u32 destination_address = 0xA4000000;
@@ -95,12 +96,17 @@ void VR4300::step() {
     const u32 instruction = m_system.mmu().read32(m_pc);
     decode_and_execute_instruction(instruction);
 
+    if (m_in_delay_slot) {
+        m_in_delay_slot = false;
+    }
+
     if (!m_about_to_branch) {
         m_pc = m_next_pc;
         m_next_pc += 4;
     } else {
         m_pc += 4;
         m_about_to_branch = false;
+        m_in_delay_slot = true;
     }
 }
 
@@ -662,7 +668,7 @@ void VR4300::addi(const u32 instruction) {
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("addi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
-    m_gprs[rt] = m_gprs[rs] + s16(imm);
+    m_gprs[rt] = static_cast<s32>(m_gprs[rs] + s16(imm));
 }
 
 void VR4300::addiu(const u32 instruction) {
@@ -747,12 +753,12 @@ void VR4300::bgezal(const u32 instruction) {
     const u64 new_pc = m_pc + 4 + (offset << 2);
     LTRACE_VR4300("bgezal ${}, 0x{:04X}", reg_name(rs), new_pc);
 
-    m_gprs[31] = m_pc + 8;
-
     if (static_cast<s64>(m_gprs[rs]) >= 0) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_gprs[31] = m_pc + 8;
 }
 
 void VR4300::bgezl(const u32 instruction) {
@@ -919,7 +925,7 @@ void VR4300::ddiv(const u32 instruction) {
     const s64 numerator = m_gprs[rs];
     const s64 denominator = m_gprs[rt];
 
-    if (denominator == 0 && numerator > 0) {
+    if (denominator == 0 && numerator >= 0) {
         m_lo = -1;
         m_hi = numerator;
     } else if (denominator == 0 && numerator < 0) {
@@ -942,11 +948,9 @@ void VR4300::ddivu(const u32 instruction) {
     const u64 numerator = m_gprs[rs];
     const u64 denominator = m_gprs[rt];
 
-    if (denominator == 0 && numerator > 0) {
+    if (denominator == 0) {
         m_lo = -1;
         m_hi = numerator;
-    } else if (denominator == 0 && numerator == 0) {
-        UNIMPLEMENTED();
     } else [[likely]] {
         m_lo = numerator / denominator;
         m_hi = numerator % denominator;
@@ -961,7 +965,7 @@ void VR4300::div(const u32 instruction) {
     const s32 numerator = m_gprs[rs];
     const s32 denominator = m_gprs[rt];
 
-    if (denominator == 0 && numerator > 0) {
+    if (denominator == 0 && numerator >= 0) {
         m_lo = -1;
         m_hi = numerator;
     } else if (denominator == 0 && numerator < 0) {
@@ -981,14 +985,12 @@ void VR4300::divu(const u32 instruction) {
     const auto rt = get_rt(instruction);
     LTRACE_VR4300("divu ${}, ${}", reg_name(rs), reg_name(rt));
 
-    const u32 numerator = m_gprs[rs];
-    const u32 denominator = m_gprs[rt];
+    const s32 numerator = m_gprs[rs];
+    const s32 denominator = m_gprs[rt];
 
-    if (denominator == 0 && numerator > 0) {
+    if (denominator == 0) {
         m_lo = -1;
         m_hi = numerator;
-    } else if (denominator == 0 && numerator == 0) {
-        UNIMPLEMENTED();
     } else [[likely]] {
         m_lo = numerator / denominator;
         m_hi = numerator % denominator;
@@ -1161,6 +1163,10 @@ void VR4300::j(const u32 instruction) {
     const u32 destination = (m_pc & 0xF0000000) | (target << 2);
     LTRACE_VR4300("j 0x{:08X}", destination);
 
+    if (m_in_delay_slot) [[unlikely]] {
+        return;
+    }
+
     m_next_pc = destination;
     m_about_to_branch = true;
 }
@@ -1181,9 +1187,8 @@ void VR4300::jalr(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("jalr ${}, ${}", reg_name(rd), reg_name(rs));
 
-    m_gprs[rd] = m_pc + 8;
-
     m_next_pc = m_gprs[rs];
+    m_gprs[rd] = m_pc + 8;
     m_about_to_branch = true;
 }
 

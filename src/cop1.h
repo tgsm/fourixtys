@@ -70,7 +70,7 @@ private:
     } m_fcr0;
 
     union {
-        u32 raw {};
+        u32 raw { 0x01000800 };
         struct {
             u32 rounding_mode : 2;
             u32 flags : 5;
