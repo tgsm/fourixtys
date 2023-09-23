@@ -543,6 +543,10 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
             mfc0(instruction);
             return;
 
+        case 0b00001:
+            dmfc0(instruction);
+            return;
+
         case 0b00100:
             mtc0(instruction);
             return;
@@ -560,12 +564,20 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
                 mfc1(instruction);
                 return;
 
+            case 0b00001:
+                dmfc1(instruction);
+                return;
+
             case 0b00010:
                 cfc1(instruction);
                 return;
 
             case 0b00100:
                 mtc1(instruction);
+                return;
+
+            case 0b00101:
+                dmtc1(instruction);
                 return;
 
             case 0b00110:
@@ -981,6 +993,30 @@ void VR4300::divu(const u32 instruction) {
         m_lo = numerator / denominator;
         m_hi = numerator % denominator;
     }
+}
+
+void VR4300::dmfc0(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dmfc0 ${}, ${}", reg_name(rt), m_cop0.get_reg_name(rd));
+
+    m_gprs[rt] = m_cop0.get_reg(rd);
+}
+
+void VR4300::dmfc1(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("dmfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    m_gprs[rt] = m_cop1.get_reg(fs);
+}
+
+void VR4300::dmtc1(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto fs = m_cop1.get_fs(instruction);
+    LTRACE_VR4300("dmtc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
+
+    m_cop1.set_reg(fs, m_gprs[rt]);
 }
 
 void VR4300::dmult(const u32 instruction) {
