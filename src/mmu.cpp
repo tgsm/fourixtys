@@ -231,6 +231,17 @@ T MMU::read(const u32 address) {
         case 0x10000000 ... 0x1FBFFFFF:
             return m_system.gamepak().read<T>(address - 0x10000000);
 
+        case PIF_RAM_BASE ... PIF_RAM_END:
+            if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - PIF_RAM_BASE;
+                return m_sp_imem.at(idx + 0) << 24 |
+                       m_sp_imem.at(idx + 1) << 16 |
+                       m_sp_imem.at(idx + 2) << 8  |
+                       m_sp_imem.at(idx + 3) << 0;
+            } else {
+                UNIMPLEMENTED_MSG("Unrecognized read{} from PIF RAM", Common::TypeSizeInBits<T>);
+            }
+
         case 0x80000000 ... 0xFFFFFFFF:
             return read<T>(virtual_address_to_physical_address(address));
 
