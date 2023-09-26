@@ -133,6 +133,7 @@ private:
     void divu(u32 instruction);
     void dmfc0(u32 instruction);
     void dmfc1(u32 instruction);
+    void dmtc0(u32 instruction);
     void dmtc1(u32 instruction);
     void dmult(u32 instruction);
     void dmultu(u32 instruction);

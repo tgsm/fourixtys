@@ -557,6 +557,10 @@ void VR4300::decode_and_execute_cop0_instruction(u32 instruction) {
             mtc0(instruction);
             return;
 
+        case 0b00101:
+            dmtc0(instruction);
+            return;
+
         default:
             UNIMPLEMENTED_MSG("unrecognized COP0 op {:05b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
@@ -1013,6 +1017,14 @@ void VR4300::dmfc1(const u32 instruction) {
     m_gprs[rt] = m_cop1.get_reg(fs);
 }
 
+void VR4300::dmtc0(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("dmtc0 ${}, ${}", reg_name(rt), m_cop0.get_reg_name(rd));
+
+    m_cop0.set_reg(rd, m_gprs[rt]);
+}
+
 void VR4300::dmtc1(const u32 instruction) {
     const auto rt = get_rt(instruction);
     const auto fs = m_cop1.get_fs(instruction);
@@ -1417,7 +1429,7 @@ void VR4300::lwu(const u32 instruction) {
 void VR4300::mfc0(const u32 instruction) {
     const auto rt = get_rt(instruction);
     const auto rd = get_rd(instruction);
-    LTRACE_VR4300("mfc0 ${}, ${}", reg_name(rt), rd);
+    LTRACE_VR4300("mfc0 ${}, ${}", reg_name(rt), m_cop0.get_reg_name(rd));
 
     m_gprs[rt] = m_cop0.get_reg(rd);
 }
