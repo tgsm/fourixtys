@@ -57,14 +57,18 @@ void VR4300::simulate_pif_routine() {
 
 // https://n64.readthedocs.io/index.html#exception-handling-process
 void VR4300::throw_exception(const ExceptionCodes code) {
-    // FIXME: 1. If the program counter is currently inside a branch delay slot, set the branch delay bit in $Cause (bit 31) to 1. Otherwise, set this bit to 0.
-    m_cop0.cause.flags.bd = false;
+    // 1. If the program counter is currently inside a branch delay slot, set the branch delay bit in $Cause (bit 31) to 1. Otherwise, set this bit to 0.
+    m_cop0.cause.flags.bd = m_in_delay_slot;
 
     // 2. If the EXL bit is currently 0, set the $EPC register in COP0 to the current PC. Then, set the EXL bit to 1.
     if (!m_cop0.status.flags.exl) {
         m_cop0.epc = m_pc;
         m_cop0.status.flags.exl = true;
-        // FIXME: A. If we are currently in a branch delay slot, instead set EPC to the address of the branch that we are currently in the delay slot of, i.e. current_pc - 4.
+
+        // A. If we are currently in a branch delay slot, instead set EPC to the address of the branch that we are currently in the delay slot of, i.e. current_pc - 4.
+        if (m_in_delay_slot) {
+            m_cop0.epc = m_pc - 4;
+        }
     }
 
     // 3. Set the exception code bit in the COP0 $Cause register to the code of the exception that was thrown.
