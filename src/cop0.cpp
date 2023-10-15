@@ -155,7 +155,6 @@ void COP0::set_reg(const u8 reg, const u64 value) {
 }
 
 void COP0::set_index(const u32 index_) {
-    LINFO("set {:016X}", index);
     index = index_;
 
     index &= ~Common::bit_mask_from_range<30, 6, u32>();
