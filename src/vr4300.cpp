@@ -643,16 +643,8 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
             m_cop1.cvt_d(instruction);
             return;
 
-        case 0b110001:
-            m_cop1.c_un(instruction);
-            return;
-
-        case 0b110010:
-            m_cop1.c_eq(instruction);
-            return;
-
-        case 0b111110:
-            m_cop1.c_le(instruction);
+        case 0b110000 ... 0b111111:
+            m_cop1.c(instruction);
             return;
 
         default:

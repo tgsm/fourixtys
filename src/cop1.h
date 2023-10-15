@@ -15,6 +15,7 @@ public:
     static std::string reg_name(u32 reg);
 
     enum class Conditions {
+        F,
         UN,
         EQ,
         UEQ,
@@ -83,6 +84,9 @@ private:
         } flags;
     } m_fcr31;
 
+    template <Conditions condition, typename T> requires std::is_floating_point_v<T>
+    bool meets_condition(T a, T b);
+
     bool m_condition_signal { false };
 
     static ALWAYS_INLINE Format get_fmt(const u32 instruction) {
@@ -109,9 +113,9 @@ private:
     void bc1f(u32 instruction);
     void bc1t(u32 instruction);
     void bc1tl(u32 instruction);
-    void c_eq(u32 instruction);
-    void c_le(u32 instruction);
-    void c_un(u32 instruction);
+    void c(u32 instruction);
+    template <Conditions condition>
+    void c_impl(u32 instruction);
     void cvt_d(u32 instruction);
     void cvt_s(u32 instruction);
     void div(u32 instruction);

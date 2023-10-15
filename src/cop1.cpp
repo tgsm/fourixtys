@@ -33,6 +33,36 @@ char COP1::fmt_name(const Format fmt) {
     }
 }
 
+template <COP1::Conditions condition, typename T> requires std::is_floating_point_v<T>
+bool COP1::meets_condition(const T a, const T b) {
+    switch (condition) {
+        case Conditions::UN:
+            return std::isnan(a) || std::isnan(b);
+        case Conditions::EQ:
+            return a == b;
+        case Conditions::OLT:
+            return a < b;
+        case Conditions::ULT:
+            return a < b || (std::isnan(a) || std::isnan(b));
+        case Conditions::LE:
+            return a <= b;
+
+        case Conditions::F:
+        case Conditions::UEQ:
+        case Conditions::OLE:
+        case Conditions::ULE:
+        case Conditions::SF:
+        case Conditions::NGLE:
+        case Conditions::SEQ:
+        case Conditions::NGL:
+        case Conditions::LT:
+        case Conditions::NGE:
+        case Conditions::NGT:
+        default:
+            UNIMPLEMENTED_MSG("FPU: Unimplemented condition {}", Common::underlying(condition));
+    }
+}
+
 void COP1::add(const u32 instruction) {
     const auto fmt = get_fmt(instruction);
     const auto ft = get_ft(instruction);
@@ -88,58 +118,48 @@ void COP1::bc1tl(const u32 instruction) {
     }
 }
 
-void COP1::c_eq(const u32 instruction) {
-    const auto fmt = get_fmt(instruction);
-    const auto ft = get_ft(instruction);
-    const auto fs = get_fs(instruction);
-    LTRACE_FPU("c.eq.{} ${}, ${}", fmt_name(fmt), reg_name(fs), reg_name(ft));
-
-    if (fmt == Format::SingleFloating) {
-        const f32 a = Common::bit_cast_f64_to_f32(m_fprs[fs]);
-        const f32 b = Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        const bool result = (a == b);
-        m_fcr31.flags.condition = result;
-        m_condition_signal = result;
-    } else if (fmt == Format::DoubleFloating) {
-        UNIMPLEMENTED_MSG("c.eq.D");
-    } else {
-        UNREACHABLE();
+void COP1::c(const u32 instruction) {
+#define COND(x, e) case x: c_impl<Conditions::e>(instruction); return
+    const auto condition_bits = Common::bit_range<3, 0>(instruction);
+    switch (condition_bits) {
+        COND(0b0000, F);
+        COND(0b0001, UN);
+        COND(0b0010, EQ);
+        COND(0b0011, UEQ);
+        COND(0b0100, OLT);
+        COND(0b0101, ULT);
+        COND(0b0110, OLE);
+        COND(0b0111, ULE);
+        COND(0b1000, SF);
+        COND(0b1001, NGLE);
+        COND(0b1010, SEQ);
+        COND(0b1011, NGL);
+        COND(0b1100, LT);
+        COND(0b1101, NGE);
+        COND(0b1110, LE);
+        COND(0b1111, NGT);
+        default:
+            UNREACHABLE();
     }
 }
 
-void COP1::c_le(const u32 instruction) {
+template <COP1::Conditions condition>
+void COP1::c_impl(const u32 instruction) {
     const auto fmt = get_fmt(instruction);
     const auto ft = get_ft(instruction);
     const auto fs = get_fs(instruction);
-    LTRACE_FPU("c.le.{} ${}, ${}", fmt_name(fmt), reg_name(fs), reg_name(ft));
+    LTRACE_FPU("c.{}.{} ${}, ${}", condition_name(condition), fmt_name(fmt), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
         const f32 a = Common::bit_cast_f64_to_f32(m_fprs[fs]);
         const f32 b = Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        const bool result = (a <= b);
+        const bool result = meets_condition<condition>(a, b);
         m_fcr31.flags.condition = result;
         m_condition_signal = result;
     } else if (fmt == Format::DoubleFloating) {
-        UNIMPLEMENTED_MSG("c.le.D");
-    } else {
-        UNREACHABLE();
-    }
-}
-
-void COP1::c_un(const u32 instruction) {
-    const auto fmt = get_fmt(instruction);
-    const auto ft = get_ft(instruction);
-    const auto fs = get_fs(instruction);
-    LTRACE_FPU("c.un.{} ${}, ${}", fmt_name(fmt), reg_name(fs), reg_name(ft));
-
-    if (fmt == Format::SingleFloating) {
-        const f32 a = Common::bit_cast_f64_to_f32(m_fprs[fs]);
-        const f32 b = Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        const bool result = (std::isnan(a) || std::isnan(b));
+        const bool result = meets_condition<condition>(m_fprs[fs], m_fprs[ft]);
         m_fcr31.flags.condition = result;
         m_condition_signal = result;
-    } else if (fmt == Format::DoubleFloating) {
-        UNIMPLEMENTED_MSG("c.un.D");
     } else {
         UNREACHABLE();
     }
