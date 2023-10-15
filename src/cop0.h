@@ -33,6 +33,8 @@ private:
     void set_reg(u8 reg, u64 value);
 
     u32 index {};
+    void set_index(u32 index);
+
     u32 random {};
     u64 entry_lo0 {};
     u64 entry_lo1 {};
@@ -64,6 +66,7 @@ private:
             u32 : 2; // coprocessors 2 and 3 enabled, which are ignored by the N64
         } flags;
     } status {};
+    void set_status(u32 raw);
 
     union {
         u32 raw { 0xB000007C };
@@ -81,8 +84,10 @@ private:
     void set_cause(u32 raw);
 
     u64 epc {};
-    u32 prid {};
+
     u32 config {};
+    void set_config(u32 raw);
+
     u32 ll_addr {};
     u32 watch_lo {};
     u32 watch_hi {};

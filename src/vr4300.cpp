@@ -42,8 +42,8 @@ void VR4300::simulate_pif_routine() {
     m_hi = 0x000000003FC18657;
     m_lo = 0x000000003103E121;
 
-    m_cop0.status.raw = 0x34000000;
-    m_cop0.config = 0x7006E463;
+    m_cop0.set_status(0x34000000);
+    m_cop0.set_config(0x7006E463);
 
     const u32 source_address = 0xB0000000;
     const u32 destination_address = 0xA4000000;

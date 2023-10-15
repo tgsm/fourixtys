@@ -75,6 +75,8 @@ u64 COP0::get_reg(const u8 reg) const {
             return cause.raw;
         case 14:
             return epc;
+        case 15: // PRId
+            return (0 << 16) | (0x0B << 8) | (0x22 << 0);
         case 16:
             return config;
         case 17:
@@ -90,7 +92,7 @@ u64 COP0::get_reg(const u8 reg) const {
 void COP0::set_reg(const u8 reg, const u64 value) {
     switch (reg) {
         case 0:
-            index = static_cast<u32>(value);
+            set_index(static_cast<u32>(value));
             return;
         case 1:
             random = static_cast<u32>(value);
@@ -104,6 +106,12 @@ void COP0::set_reg(const u8 reg, const u64 value) {
         case 5:
             page_mask = static_cast<u32>(value);
             return;
+        case 6:
+            wired = Common::lowest_bits(static_cast<u32>(value), 6);
+            return;
+        case 8:
+            // BadVaddr is read only - ignore
+            return;
         case 9:
             count = static_cast<u32>(value);
             return;
@@ -115,19 +123,19 @@ void COP0::set_reg(const u8 reg, const u64 value) {
             disable_cause_ip_bit<7>();
             return;
         case 12:
-            status.raw = static_cast<u32>(value);
+            set_status(static_cast<u32>(value));
             return;
         case 13:
             set_cause(static_cast<u32>(value));
             return;
         case 14:
-            epc = static_cast<u32>(value);
+            epc = value;
             return;
         case 15:
-            prid = static_cast<u32>(value);
+            // PRId - readonly
             return;
         case 16:
-            config = static_cast<u32>(value);
+            set_config(value);
             return;
         case 17:
             ll_addr = static_cast<u32>(value);
@@ -139,11 +147,24 @@ void COP0::set_reg(const u8 reg, const u64 value) {
             tag_hi = static_cast<u32>(value);
             return;
         case 30:
-            error_epc = static_cast<u32>(value);
+            error_epc = value;
             return;
         default:
             UNIMPLEMENTED_MSG("unimplemented set COP0 reg {}", reg);
     }
+}
+
+void COP0::set_index(const u32 index_) {
+    LINFO("set {:016X}", index);
+    index = index_;
+
+    index &= ~Common::bit_mask_from_range<30, 6, u32>();
+}
+
+void COP0::set_status(const u32 raw) {
+    status.raw = raw;
+
+    Common::disable_bits<19>(status.raw);
 }
 
 void COP0::set_cause(const u32 raw) {
@@ -151,6 +172,16 @@ void COP0::set_cause(const u32 raw) {
 
     Common::disable_bits<0, 1, 7, 30>(cause.raw);
     cause.raw &= ~Common::bit_mask_from_range<16, 27, u32>();
+}
+
+void COP0::set_config(const u32 raw) {
+    config = raw;
+
+    Common::disable_bits<31>(config);
+    config &= ~Common::bit_mask_from_range<23, 16, u32>();
+    config |= (0b00000110 << 16);
+    config &= ~Common::bit_mask_from_range<14, 4, u32>();
+    config |= (0b11001000110 << 4);
 }
 
 void COP0::increment_cycle_count(u32 cycles) {
