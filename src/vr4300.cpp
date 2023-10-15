@@ -597,6 +597,9 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
             case 0b01000: {
                 const auto bc_op = Common::bit_range<20, 16>(instruction);
                 switch (bc_op) {
+                    case 0b00000:
+                        m_cop1.bc1f(instruction);
+                        return;
                     case 0b00001:
                         m_cop1.bc1t(instruction);
                         return;

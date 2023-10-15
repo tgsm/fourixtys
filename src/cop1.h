@@ -106,6 +106,7 @@ private:
     }
 
     void add(u32 instruction);
+    void bc1f(u32 instruction);
     void bc1t(u32 instruction);
     void bc1tl(u32 instruction);
     void c_eq(u32 instruction);

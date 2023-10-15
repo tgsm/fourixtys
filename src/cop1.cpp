@@ -50,6 +50,18 @@ void COP1::add(const u32 instruction) {
     }
 }
 
+void COP1::bc1f(const u32 instruction) {
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_vr4300.pc() + 4 + (offset << 2);
+    LTRACE_FPU("bc1f 0x{:08X}", new_pc);
+
+    if (!m_condition_signal) {
+        m_vr4300.m_pc = new_pc;
+        m_vr4300.m_next_pc = m_vr4300.m_pc + 4;
+        m_vr4300.m_about_to_branch = true;
+    }
+}
+
 void COP1::bc1t(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     const u64 new_pc = m_vr4300.pc() + 4 + (offset << 2);
