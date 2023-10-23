@@ -62,7 +62,7 @@ u64 COP0::get_reg(const u8 reg) const {
         case 3:
             return entry_lo1;
         case 4:
-            return context;
+            return context.raw;
         case 6:
             return wired;
         case 8:
@@ -86,7 +86,7 @@ u64 COP0::get_reg(const u8 reg) const {
         case 17:
             return ll_addr;
         case 20:
-            return x_context;
+            return xcontext.raw;
         case 30:
             return error_epc;
         default:
@@ -108,6 +108,9 @@ void COP0::set_reg(const u8 reg, const u64 value) {
             return;
         case 3:
             entry_lo1 = value;
+            return;
+        case 4:
+            set_context(value);
             return;
         case 5:
             page_mask = static_cast<u32>(value);
@@ -149,6 +152,9 @@ void COP0::set_reg(const u8 reg, const u64 value) {
         case 18:
             watch_lo = value;
             return;
+        case 20:
+            set_xcontext(value);
+            return;
         case 28:
             tag_lo = static_cast<u32>(value);
             return;
@@ -167,6 +173,12 @@ void COP0::set_index(const u32 index_) {
     index = index_;
 
     index &= ~Common::bit_mask_from_range<30, 6, u32>();
+}
+
+void COP0::set_context(const u64 raw) {
+    context.raw = raw;
+
+    context.raw &= ~Common::bit_mask_from_range<3, 0, u64>();
 }
 
 void COP0::set_status(const u32 raw) {
@@ -190,6 +202,12 @@ void COP0::set_config(const u32 raw) {
     config |= (0b00000110 << 16);
     config &= ~Common::bit_mask_from_range<14, 4, u32>();
     config |= (0b11001000110 << 4);
+}
+
+void COP0::set_xcontext(const u64 raw) {
+    xcontext.raw = raw;
+
+    xcontext.raw &= ~Common::bit_mask_from_range<3, 0, u64>();
 }
 
 void COP0::increment_cycle_count(u32 cycles) {

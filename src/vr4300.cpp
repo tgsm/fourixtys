@@ -88,6 +88,8 @@ void VR4300::throw_exception(const ExceptionCodes code) {
         case ExceptionCodes::TLBMissStore:
         case ExceptionCodes::TLBModification:
             UNIMPLEMENTED();
+        case ExceptionCodes::AddressErrorLoad:
+        case ExceptionCodes::AddressErrorStore:
         case ExceptionCodes::CoprocessorUnusable:
         case ExceptionCodes::ArithmeticOverflow:
             m_next_pc = 0xFFFFFFFF80000180;
@@ -99,6 +101,17 @@ void VR4300::throw_exception(const ExceptionCodes code) {
         default:
             UNIMPLEMENTED_MSG("Exception code {}", Common::underlying(code));
     }
+}
+
+template <VR4300::ExceptionCodes code>
+void VR4300::throw_address_error_exception(const u64 bad_address) {
+    static_assert(code == ExceptionCodes::AddressErrorLoad || code == ExceptionCodes::AddressErrorStore);
+
+    m_cop0.bad_vaddr = bad_address;
+    m_cop0.context.flags.bad_vpn_2 = Common::bit_range<31, 13>(bad_address);
+    m_cop0.xcontext.flags.bad_vpn_2 = Common::bit_range<39, 13>(bad_address);
+    m_cop0.xcontext.flags.r = Common::bit_range<63, 62>(bad_address);
+    throw_exception(code);
 }
 
 void VR4300::step() {
@@ -1391,14 +1404,26 @@ void VR4300::lui(u32 instruction) {
 }
 
 void VR4300::lw(const u32 instruction) {
-    // FIXME: throw an exception if either of the low-order two bits of the address is not zero
-
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lw ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + s16(offset);
+    const u64 address = m_gprs[base] + s16(offset);
+
+    // Throw an exception if the address is not sign-extended.
+    if ((Common::is_bit_enabled<31>(address) && Common::bit_range<63, 32>(address) != 0xFFFFFFFF) ||
+        (!Common::is_bit_enabled<31>(address) && Common::bit_range<63, 32>(address) == 0xFFFFFFFF)) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
+    // Throw an exception if the address is not word-aligned.
+    if ((address & 0b11) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
     m_gprs[rt] = static_cast<s32>(m_system.mmu().read32(address));
 }
 
@@ -1821,14 +1846,26 @@ void VR4300::subu(const u32 instruction) {
 }
 
 void VR4300::sw(const u32 instruction) {
-    // FIXME: If either of the low-order two bits of the address are not zero, an address error exception occurs.
-
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sw ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + s16(offset);
+
+    // Throw an exception if the address is not sign-extended.
+    if ((Common::is_bit_enabled<31>(address) && Common::bit_range<63, 32>(address) != 0xFFFFFFFF) ||
+        (!Common::is_bit_enabled<31>(address) && Common::bit_range<63, 32>(address) == 0xFFFFFFFF)) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorStore>(address);
+        return;
+    }
+
+    // Throw an exception if the address is not word-aligned.
+    if ((address & 0b11) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorStore>(address);
+        return;
+    }
+
     m_system.mmu().write32(address, m_gprs[rt]);
 }
 

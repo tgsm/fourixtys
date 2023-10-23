@@ -38,7 +38,17 @@ private:
     u32 random {};
     u64 entry_lo0 {};
     u64 entry_lo1 {};
-    u64 context {};
+
+    union {
+        u64 raw {};
+        struct {
+            u64 : 4;
+            u64 bad_vpn_2 : 19;
+            u64 pte_base : 41;
+        } flags;
+    } context {};
+    void set_context(u64 raw);
+
     u32 page_mask {};
     u32 wired {};
     u64 bad_vaddr { -1lu };
@@ -91,7 +101,18 @@ private:
     u32 ll_addr {};
     u32 watch_lo {};
     u32 watch_hi {};
-    u64 x_context {};
+
+    union {
+        u64 raw {};
+        struct {
+            u64 : 4;
+            u64 bad_vpn_2 : 27;
+            u64 r : 2;
+            u64 pte_base : 31;
+        } flags;
+    } xcontext {};
+    void set_xcontext(u64 raw);
+
     u32 parity_error {};
     u32 cache_error {};
     u32 tag_lo {};

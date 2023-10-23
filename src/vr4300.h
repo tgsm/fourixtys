@@ -36,6 +36,8 @@ public:
     };
 
     void throw_exception(ExceptionCodes code);
+    template <ExceptionCodes code>
+    void throw_address_error_exception(u64 bad_address);
 
     void step();
 
