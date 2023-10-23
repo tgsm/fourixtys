@@ -694,7 +694,13 @@ void VR4300::add(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("add ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
-    m_gprs[rd] = static_cast<s32>(m_gprs[rs] + m_gprs[rt]);
+    s32 result = 0;
+    if (__builtin_sadd_overflow(m_gprs[rs], m_gprs[rt], &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
+
+    m_gprs[rd] = result;
 }
 
 void VR4300::addi(const u32 instruction) {
@@ -703,7 +709,13 @@ void VR4300::addi(const u32 instruction) {
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("addi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
-    m_gprs[rt] = static_cast<s32>(m_gprs[rs] + s16(imm));
+    s32 result = 0;
+    if (__builtin_sadd_overflow(m_gprs[rs], static_cast<s16>(imm), &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
+
+    m_gprs[rt] = result;
 }
 
 void VR4300::addiu(const u32 instruction) {
