@@ -377,7 +377,7 @@ void MMU::write(const u32 address, const T value) {
                     m_pi.set_dma_write_length(value);
                     return;
                 case PI_REG_STATUS:
-                    if (Common::is_bit_enabled<0>(value)) {
+                    if (Common::is_bit_enabled<1>(value)) {
                         m_mi.cancel_interrupt(MI::InterruptFlags::PI);
                     }
                     // FIXME: Reset DMA controller and stop any transfer being done if bit 0 is set.
