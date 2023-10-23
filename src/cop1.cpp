@@ -87,8 +87,7 @@ void COP1::bc1f(const u32 instruction) {
     LTRACE_FPU("bc1f 0x{:08X}", new_pc);
 
     if (!m_condition_signal) {
-        m_vr4300.m_pc = new_pc;
-        m_vr4300.m_next_pc = m_vr4300.m_pc + 4;
+        m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
     }
 }
@@ -112,8 +111,7 @@ void COP1::bc1t(const u32 instruction) {
     LTRACE_FPU("bc1t 0x{:08X}", new_pc);
 
     if (m_condition_signal) {
-        m_vr4300.m_pc = new_pc;
-        m_vr4300.m_next_pc = m_vr4300.m_pc + 4;
+        m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
     }
 }
@@ -124,8 +122,7 @@ void COP1::bc1tl(const u32 instruction) {
     LTRACE_FPU("bc1tl 0x{:08X}", new_pc);
 
     if (m_condition_signal) {
-        m_vr4300.m_pc = new_pc;
-        m_vr4300.m_next_pc = m_vr4300.m_pc + 4;
+        m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
     } else {
         m_vr4300.m_next_pc += 4;
