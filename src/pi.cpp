@@ -15,4 +15,5 @@ void PI::run_dma_transfer_to_rdram() {
     }
 
     Common::enable_bits<3>(m_status);
+    m_mmu.mi().request_interrupt(MI::InterruptFlags::PI);
 }
