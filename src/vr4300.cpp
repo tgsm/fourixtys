@@ -1286,7 +1286,10 @@ void VR4300::lb(const u32 instruction) {
     const u16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lb ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
     m_gprs[rt] = static_cast<s8>(m_system.mmu().read8(address));
 }
 
@@ -1298,7 +1301,10 @@ void VR4300::lbu(const u32 instruction) {
     const u16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lbu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
     m_gprs[rt] = m_system.mmu().read8(address);
 }
 
@@ -1310,7 +1316,16 @@ void VR4300::ld(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("ld ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + s16(offset);
+    const u64 address = m_gprs[base] + s16(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not doubleword-aligned.
+    if ((address & 0b111) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
     m_gprs[rt] = m_system.mmu().read64(address);
 }
 
@@ -1367,7 +1382,16 @@ void VR4300::lh(const u32 instruction) {
     const u16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lh ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not halfword-aligned.
+    if ((address & 0b1) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
     m_gprs[rt] = static_cast<s16>(m_system.mmu().read16(address));
 }
 
@@ -1379,7 +1403,16 @@ void VR4300::lhu(const u32 instruction) {
     const u16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lhu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not halfword-aligned.
+    if ((address & 0b1) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
     m_gprs[rt] = m_system.mmu().read16(address);
 }
 
@@ -1491,14 +1524,21 @@ void VR4300::lwr(const u32 instruction) {
 }
 
 void VR4300::lwu(const u32 instruction) {
-    // TODO: throw an exception if either of the low-order two bits of the address is not zero
-
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("lwu ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + s16(offset);
+    const u64 address = m_gprs[base] + s16(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not word-aligned.
+    if ((address & 0b11) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(address);
+        return;
+    }
+
     m_gprs[rt] = m_system.mmu().read32(address);
 }
 
@@ -1645,7 +1685,10 @@ void VR4300::sb(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sb ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
     m_system.mmu().write8(address, m_gprs[rt]);
 }
 
@@ -1662,14 +1705,21 @@ void VR4300::sc(const u32 instruction) {
 }
 
 void VR4300::sd(const u32 instruction) {
-    // FIXME: If either of the low-order three bits of the address are not zero, an address error exception occurs.
-
     const auto base = Common::bit_range<25, 21>(instruction);
     const auto rt = get_rt(instruction);
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sd ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not doubleword-aligned.
+    if ((address & 0b111) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorStore>(address);
+        return;
+    }
+
     m_system.mmu().write64(address, m_gprs[rt]);
 }
 
@@ -1722,7 +1772,16 @@ void VR4300::sh(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sh ${}, 0x{:04X}(${})", reg_name(rt), offset, reg_name(base));
 
-    const u32 address = m_gprs[base] + static_cast<s16>(offset);
+    const u64 address = m_gprs[base] + static_cast<s16>(offset);
+
+    // FIXME: Do we throw an exception is the address is not sign-extended?
+
+    // Throw an exception if the address is not halfword-aligned.
+    if ((address & 0b1) != 0) [[unlikely]] {
+        throw_address_error_exception<ExceptionCodes::AddressErrorStore>(address);
+        return;
+    }
+
     m_system.mmu().write16(address, m_gprs[rt]);
 }
 
