@@ -62,19 +62,23 @@ void VR4300::throw_exception(const ExceptionCodes code) {
 
     // 2. If the EXL bit is currently 0, set the $EPC register in COP0 to the current PC. Then, set the EXL bit to 1.
     if (!m_cop0.status.flags.exl) {
-        m_cop0.epc = m_pc;
+        m_cop0.epc = static_cast<s32>(m_pc);
         m_cop0.status.flags.exl = true;
 
         // A. If we are currently in a branch delay slot, instead set EPC to the address of the branch that we are currently in the delay slot of, i.e. current_pc - 4.
         if (m_in_delay_slot) {
-            m_cop0.epc = m_pc - 4;
+            m_cop0.epc = static_cast<s32>(m_pc - 4);
         }
     }
 
     // 3. Set the exception code bit in the COP0 $Cause register to the code of the exception that was thrown.
     m_cop0.cause.flags.exc_code = Common::underlying(code);
 
-    // FIXME: 4. If the coprocessor error is a defined value, i.e. for the coprocessor unusable exception, set the coprocessor error field in $Cause to the coprocessor that caused the error. Otherwise, the value of this field is undefined behavior in hardware, so it shouldn’t matter what you emulate this as.
+    // 4. If the coprocessor error is a defined value, i.e. for the coprocessor unusable exception, set the coprocessor error field in $Cause to the coprocessor that caused the error. Otherwise, the value of this field is undefined behavior in hardware, so it shouldn’t matter what you emulate this as.
+    // NOTE: This is currently handled in any instructions that would throw a coprocessor unusable exception.
+    if (code != ExceptionCodes::CoprocessorUnusable) {
+        m_cop0.cause.flags.ce = 0;
+    }
 
     // 5. Jump to the exception vector. A detailed description on how to find the correct exception vector is found on pages 180 through 181 of the manual, and described in less detail below.
     //    A. Note that there is no “delay slot” executed when jumping to the exception vector, execution jumps there immediately.
@@ -84,8 +88,12 @@ void VR4300::throw_exception(const ExceptionCodes code) {
         case ExceptionCodes::TLBMissStore:
         case ExceptionCodes::TLBModification:
             UNIMPLEMENTED();
+        case ExceptionCodes::CoprocessorUnusable:
+        case ExceptionCodes::ArithmeticOverflow:
+            m_next_pc = 0xFFFFFFFF80000180;
+            break;
         case ExceptionCodes::Interrupt:
-            m_pc = 0x80000180;
+            m_pc = 0xFFFFFFFF80000180;
             m_next_pc = m_pc + 4;
             break;
         default:
@@ -132,6 +140,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
 
         case 0b010001:
             decode_and_execute_cop1_instruction(instruction);
+            return;
+
+        case 0b010010:
+            cop2(instruction);
             return;
 
         case 0b000010:
@@ -665,6 +677,15 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
         default:
             UNIMPLEMENTED_MSG("unrecognized FPU op {:06b} (instr={:08X}, pc={:016X})", op, instruction, m_pc);
     }
+}
+
+void VR4300::cop2(const u32 instruction) {
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
+    LTRACE_VR4300("cop2 ${}, ${}", rt, rd);
+
+    m_cop0.cause.flags.ce = 2;
+    throw_exception(ExceptionCodes::CoprocessorUnusable);
 }
 
 void VR4300::add(const u32 instruction) {

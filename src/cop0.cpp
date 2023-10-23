@@ -57,6 +57,10 @@ u64 COP0::get_reg(const u8 reg) const {
             return index;
         case 1:
             return random;
+        case 2:
+            return entry_lo0;
+        case 3:
+            return entry_lo1;
         case 4:
             return context;
         case 6:
@@ -81,6 +85,8 @@ u64 COP0::get_reg(const u8 reg) const {
             return config;
         case 17:
             return ll_addr;
+        case 20:
+            return x_context;
         case 30:
             return error_epc;
         default:
@@ -139,6 +145,9 @@ void COP0::set_reg(const u8 reg, const u64 value) {
             return;
         case 17:
             ll_addr = static_cast<u32>(value);
+            return;
+        case 18:
+            watch_lo = value;
             return;
         case 28:
             tag_lo = static_cast<u32>(value);

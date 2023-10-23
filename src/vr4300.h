@@ -103,6 +103,7 @@ private:
     void decode_and_execute_regimm_instruction(u32 instruction);
     void decode_and_execute_cop0_instruction(u32 instruction);
     void decode_and_execute_cop1_instruction(u32 instruction);
+    void cop2(u32 instruction);
 
     void add(u32 instruction);
     void addi(u32 instruction);
