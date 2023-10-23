@@ -1073,7 +1073,7 @@ void VR4300::dmfc1(const u32 instruction) {
     const auto fs = m_cop1.get_fs(instruction);
     LTRACE_VR4300("dmfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
-    m_gprs[rt] = m_cop1.get_reg(fs);
+    m_gprs[rt] = std::bit_cast<u64>(m_cop1.get_reg(fs));
 }
 
 void VR4300::dmtc0(const u32 instruction) {
