@@ -360,10 +360,10 @@ void MMU::write(const u32 address, const T value) {
         case PI_REGISTERS_BASE ... PI_REGISTERS_END:
             switch (address) {
                 case PI_REG_DRAM_ADDRESS:
-                    m_pi.set_dram_address(value);
+                    m_pi.set_dram_address(value & ~0b1);
                     return;
                 case PI_REG_DMA_CART_ADDRESS:
-                    m_pi.set_dma_cart_address(value);
+                    m_pi.set_dma_cart_address(value & ~0b1);
                     return;
                 case PI_REG_DMA_WRITE_LENGTH:
                     m_pi.set_dma_write_length(value);
