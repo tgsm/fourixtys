@@ -925,23 +925,26 @@ void VR4300::dadd(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("dadd ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
-    m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
+    s64 result = 0;
+    if (__builtin_saddl_overflow(m_gprs[rs], m_gprs[rt], &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
+
+    m_gprs[rd] = result;
 }
 
 void VR4300::daddi(const u32 instruction) {
-    // FIXME: An integer overflow exception occurs if carries out of
-    //        bits 62 and 63 differ (2’s complement overflow).  The
-    //        contents of destination register rt is not modified when
-    //        an integer overflow exception occurs.
-
     const auto rs = get_rs(instruction);
     const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("daddi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
-    const s64 addend1 = m_gprs[rs];
-    const s16 addend2 = imm;
-    const s64 result = addend1 + addend2;
+    s64 result = 0;
+    if (__builtin_saddl_overflow(m_gprs[rs], static_cast<s16>(imm), &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
 
     m_gprs[rt] = result;
 }
@@ -1187,7 +1190,13 @@ void VR4300::dsub(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("dsub ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
-    m_gprs[rd] = m_gprs[rs] - m_gprs[rt];
+    s64 result = 0;
+    if (__builtin_ssubl_overflow(m_gprs[rs], m_gprs[rt], &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
+
+    m_gprs[rd] = result;
 }
 
 void VR4300::dsubu(const u32 instruction) {
@@ -1793,7 +1802,13 @@ void VR4300::sub(const u32 instruction) {
     const auto rd = get_rd(instruction);
     LTRACE_VR4300("sub ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
-    m_gprs[rd] = static_cast<s32>(m_gprs[rs] - m_gprs[rt]);
+    s32 result = 0;
+    if (__builtin_ssub_overflow(m_gprs[rs], m_gprs[rt], &result)) [[unlikely]] {
+        throw_exception(ExceptionCodes::ArithmeticOverflow);
+        return;
+    }
+
+    m_gprs[rd] = result;
 }
 
 void VR4300::subu(const u32 instruction) {
