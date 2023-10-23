@@ -8,8 +8,10 @@ class PI {
 public:
     explicit PI(MMU& mmu) : m_mmu(mmu) {}
 
+    u32 dram_address() const { return m_dram_address; }
     void set_dram_address(u32 address) { m_dram_address = address; }
 
+    u32 dma_cart_address() const { return m_dma_cart_address; }
     void set_dma_cart_address(u32 address) { m_dma_cart_address = address; }
 
     void set_dma_write_length(u32 value) {

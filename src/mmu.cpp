@@ -212,6 +212,14 @@ T MMU::read(const u32 address) {
 
         case PI_REGISTERS_BASE ... PI_REGISTERS_END:
             switch (address) {
+                case PI_REG_DRAM_ADDRESS:
+                    return m_pi.dram_address();
+                case PI_REG_DMA_CART_ADDRESS:
+                    return m_pi.dma_cart_address();
+                case PI_REG_DMA_READ_LENGTH:
+                    return 0x7F;
+                case PI_REG_DMA_WRITE_LENGTH:
+                    return 0x7F;
                 case PI_REG_STATUS:
                     return m_pi.status();
                 default:
