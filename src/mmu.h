@@ -4,6 +4,7 @@
 #include "common/types.h"
 #include "mi.h"
 #include "pi.h"
+#include "si.h"
 #include "vi.h"
 
 class N64;
@@ -49,6 +50,7 @@ private:
     PI m_pi;
     MI m_mi;
     VI m_vi;
+    SI m_si;
 
     std::array<u8, 0x400000> m_rdram {};
     std::array<u8, 0x1000> m_sp_dmem {};

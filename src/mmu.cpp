@@ -72,6 +72,12 @@ static constexpr u32 RI_REGISTERS_BASE         = 0x04700000;
 static constexpr u32 RI_REGISTERS_END          = 0x047FFFFF;
 
 static constexpr u32 SI_REGISTERS_BASE         = 0x04800000;
+static constexpr u32 SI_REG_DRAM_ADDR          = 0x04800000;
+static constexpr u32 SI_REG_PIF_AD_RD64B       = 0x04800004;
+static constexpr u32 SI_REG_PIF_AD_WR4B        = 0x04800008;
+static constexpr u32 SI_REG_PIF_AD_WR64B       = 0x04800010;
+static constexpr u32 SI_REG_PIF_AD_RD4B        = 0x04800014;
+static constexpr u32 SI_REG_STATUS             = 0x04800018;
 static constexpr u32 SI_REGISTERS_END          = 0x048FFFFF;
 
 static constexpr u32 ISVIEWER_REG_LENGTH       = 0x13FF0014;
@@ -84,7 +90,7 @@ static constexpr u32 PIF_BOOTROM_END           = 0x1FC007BF;
 static constexpr u32 PIF_RAM_BASE              = 0x1FC007C0;
 static constexpr u32 PIF_RAM_END               = 0x1FC007FF;
 
-MMU::MMU(N64& system) : m_system(system), m_pi(*this), m_mi(system.vr4300()) {}
+MMU::MMU(N64& system) : m_system(system), m_pi(*this), m_mi(system.vr4300()), m_si(*this) {}
 
 constexpr MMU::AddressRanges MMU::address_range(const u32 virtual_address) {
     if (virtual_address < KSEG0_BASE) {
@@ -229,8 +235,8 @@ T MMU::read(const u32 address) {
 
         case SI_REGISTERS_BASE ... SI_REGISTERS_END:
             switch (address) {
-                case 0x04800018:
-                    return 0;
+                case SI_REG_STATUS:
+                    return m_si.status();
                 default:
                     LERROR("Unrecognized read{} from SI register 0x{:08X}", Common::TypeSizeInBits<T>, address);
                     return T(-1);
@@ -384,6 +390,25 @@ void MMU::write(const u32 address, const T value) {
                     return;
                 default:
                     LERROR("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    return;
+            }
+
+        case SI_REGISTERS_BASE ... SI_REGISTERS_END:
+            switch (address) {
+                case SI_REG_DRAM_ADDR:
+                    m_si.set_dram_address(value);
+                    return;
+                case SI_REG_PIF_AD_RD64B:
+                    m_si.transfer_64_bytes_from_pif_ram(value);
+                    return;
+                case SI_REG_PIF_AD_WR64B:
+                    m_si.transfer_64_bytes_to_pif_ram(value);
+                    return;
+                case SI_REG_STATUS:
+                    m_mi.cancel_interrupt(MI::InterruptFlags::SI);
+                    return;
+                default:
+                    LERROR("Unrecognized write{} 0x{:08X} to SI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
                     return;
             }
 
