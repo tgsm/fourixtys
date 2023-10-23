@@ -125,13 +125,17 @@ void VR4300::step() {
         m_in_delay_slot = false;
     }
 
+    if (m_entering_delay_slot) {
+        m_in_delay_slot = true;
+        m_entering_delay_slot = false;
+    }
+
     if (!m_about_to_branch) {
         m_pc = m_next_pc;
         m_next_pc += 4;
     } else {
         m_pc += 4;
         m_about_to_branch = false;
-        m_in_delay_slot = true;
     }
 }
 
@@ -778,6 +782,8 @@ void VR4300::beq(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::beql(const u32 instruction) {
@@ -790,6 +796,7 @@ void VR4300::beql(const u32 instruction) {
     if (m_gprs[rs] == m_gprs[rt]) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
+        m_entering_delay_slot = true;
     } else {
         m_next_pc += 4;
     }
@@ -805,6 +812,8 @@ void VR4300::bgez(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::bgezal(const u32 instruction) {
@@ -818,6 +827,7 @@ void VR4300::bgezal(const u32 instruction) {
         m_about_to_branch = true;
     }
 
+    m_entering_delay_slot = true;
     m_gprs[31] = m_pc + 8;
 }
 
@@ -830,6 +840,7 @@ void VR4300::bgezl(const u32 instruction) {
     if (static_cast<s64>(m_gprs[rs]) >= 0) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
+        m_entering_delay_slot = true;
     } else {
         m_next_pc += 4;
     }
@@ -845,6 +856,8 @@ void VR4300::bgtz(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::blez(const u32 instruction) {
@@ -857,6 +870,8 @@ void VR4300::blez(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::bltz(const u32 instruction) {
@@ -869,6 +884,8 @@ void VR4300::bltz(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::bne(const u32 instruction) {
@@ -882,6 +899,8 @@ void VR4300::bne(const u32 instruction) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
     }
+
+    m_entering_delay_slot = true;
 }
 
 void VR4300::bnel(const u32 instruction) {
@@ -894,6 +913,7 @@ void VR4300::bnel(const u32 instruction) {
     if (m_gprs[rs] != m_gprs[rt]) {
         m_next_pc = new_pc;
         m_about_to_branch = true;
+        m_entering_delay_slot = true;
     } else {
         m_next_pc += 4;
     }
@@ -1245,6 +1265,7 @@ void VR4300::j(const u32 instruction) {
 
     m_next_pc = destination;
     m_about_to_branch = true;
+    m_entering_delay_slot = true;
 }
 
 void VR4300::jal(const u32 instruction) {
@@ -1256,6 +1277,7 @@ void VR4300::jal(const u32 instruction) {
 
     m_next_pc = destination;
     m_about_to_branch = true;
+    m_entering_delay_slot = true;
 }
 
 void VR4300::jalr(const u32 instruction) {
@@ -1266,6 +1288,7 @@ void VR4300::jalr(const u32 instruction) {
     m_next_pc = m_gprs[rs];
     m_gprs[rd] = m_pc + 8;
     m_about_to_branch = true;
+    m_entering_delay_slot = true;
 }
 
 void VR4300::jr(const u32 instruction) {
@@ -1276,6 +1299,7 @@ void VR4300::jr(const u32 instruction) {
 
     m_next_pc = m_gprs[rs];
     m_about_to_branch = true;
+    m_entering_delay_slot = true;
 }
 
 void VR4300::lb(const u32 instruction) {

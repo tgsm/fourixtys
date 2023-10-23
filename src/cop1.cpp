@@ -89,6 +89,8 @@ void COP1::bc1f(const u32 instruction) {
         m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
     }
+
+    m_vr4300.m_entering_delay_slot = true;
 }
 
 void COP1::bc1fl(const u32 instruction) {
@@ -99,6 +101,7 @@ void COP1::bc1fl(const u32 instruction) {
     if (!m_condition_signal) {
         m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
+        m_vr4300.m_entering_delay_slot = true;
     } else {
         m_vr4300.m_next_pc += 4;
     }
@@ -113,6 +116,8 @@ void COP1::bc1t(const u32 instruction) {
         m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
     }
+
+    m_vr4300.m_entering_delay_slot = true;
 }
 
 void COP1::bc1tl(const u32 instruction) {
@@ -123,6 +128,7 @@ void COP1::bc1tl(const u32 instruction) {
     if (m_condition_signal) {
         m_vr4300.m_next_pc = new_pc;
         m_vr4300.m_about_to_branch = true;
+        m_vr4300.m_entering_delay_slot = true;
     } else {
         m_vr4300.m_next_pc += 4;
     }

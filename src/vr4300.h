@@ -84,6 +84,7 @@ private:
     u64 m_pc { 0 };
     u64 m_next_pc { 0 };
     bool m_about_to_branch { false };
+    bool m_entering_delay_slot { false };
     bool m_in_delay_slot { false };
 
     void simulate_pif_routine();
