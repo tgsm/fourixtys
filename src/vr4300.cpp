@@ -1245,10 +1245,10 @@ void VR4300::eret(const u32 instruction) {
     LTRACE_VR4300("eret");
 
     if (m_cop0.status.flags.erl) {
-        m_next_pc = m_cop0.error_epc + 4;
+        m_next_pc = m_cop0.error_epc;
         m_cop0.status.flags.erl = false;
     } else {
-        m_next_pc = m_cop0.epc + 4;
+        m_next_pc = m_cop0.epc;
         m_cop0.status.flags.exl = false;
     }
     // FIXME: Clear the LL bit to zero.
