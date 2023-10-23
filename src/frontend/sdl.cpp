@@ -87,7 +87,7 @@ int main_SDL(std::span<std::string_view> args) {
         return 1;
     }
 
-    g_window = SDL_CreateWindow("n64emu", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DefaultScreenWidth * DefaultScreenScale, DefaultScreenHeight * DefaultScreenScale, 0);
+    g_window = SDL_CreateWindow("fourixtys", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DefaultScreenWidth * DefaultScreenScale, DefaultScreenHeight * DefaultScreenScale, 0);
     if (!g_window) {
         LFATAL("Failed to create SDL window: {}", SDL_GetError());
         SDL_Quit();

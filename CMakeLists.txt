@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(n64emu CXX)
+project(fourixtys CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-gdwarf-4")
@@ -8,10 +8,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 find_package(fmt REQUIRED)
 
-option(N64_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers")
+option(FOURIXTYS_ENABLE_SANITIZERS "Enable address and undefined behavior sanitizers")
 
-set(N64_FRONTEND "SDL2" CACHE STRING "The frontend n64emu will run on")
-set_property(CACHE N64_FRONTEND PROPERTY STRINGS "SDL2" "Headless")
+set(FOURIXTYS_FRONTEND "SDL2" CACHE STRING "The frontend fourixtys will run on")
+set_property(CACHE FOURIXTYS_FRONTEND PROPERTY STRINGS "SDL2" "Headless")
 
 set(SOURCES
     src/common/bits.h
@@ -42,17 +42,17 @@ set(SOURCES
     src/vr4300.h
 )
 
-if (${N64_FRONTEND} MATCHES "SDL2")
+if (${FOURIXTYS_FRONTEND} MATCHES "SDL2")
     set(SOURCES ${SOURCES} "src/frontend/sdl.cpp" "src/frontend/sdl.h")
 else()
     set(SOURCES ${SOURCES} "src/frontend/headless.cpp" "src/frontend/headless.h")
 endif()
 
-add_executable(n64emu ${SOURCES})
+add_executable(fourixtys ${SOURCES})
 
-target_include_directories(n64emu PRIVATE src)
+target_include_directories(fourixtys PRIVATE src)
 
-target_compile_options(n64emu PRIVATE
+target_compile_options(fourixtys PRIVATE
     -Wall
     -Wextra
     -Wshadow
@@ -60,15 +60,15 @@ target_compile_options(n64emu PRIVATE
     -march=native
 )
 
-if (N64_ENABLE_SANITIZERS)
-    target_compile_options(n64emu PRIVATE -fsanitize=undefined,address)
-    target_link_libraries(n64emu asan ubsan)
+if (FOURIXTYS_ENABLE_SANITIZERS)
+    target_compile_options(fourixtys PRIVATE -fsanitize=undefined,address)
+    target_link_libraries(fourixtys asan ubsan)
 endif()
 
-if (${N64_FRONTEND} MATCHES "SDL2")
+if (${FOURIXTYS_FRONTEND} MATCHES "SDL2")
     find_package(SDL2 REQUIRED)
-    target_compile_definitions(n64emu PRIVATE "N64_FRONTEND_SDL")
-    target_link_libraries(n64emu SDL2)
+    target_compile_definitions(fourixtys PRIVATE "FOURIXTYS_FRONTEND_SDL")
+    target_link_libraries(fourixtys SDL2)
 endif()
 
-target_link_libraries(n64emu fmt)
+target_link_libraries(fourixtys fmt)
