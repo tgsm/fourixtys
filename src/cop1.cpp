@@ -72,10 +72,9 @@ void COP1::add(const u32 instruction) {
     LTRACE_FPU("add.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) + Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
+        m_fprs[fd].as_f32 = m_fprs[fs].as_f32 + m_fprs[ft].as_f32;
     } else if (fmt == Format::DoubleFloating) {
-        m_fprs[fd] = m_fprs[fs] + m_fprs[ft];
+        m_fprs[fd].as_f64 = m_fprs[fs].as_f64 + m_fprs[ft].as_f64;
     } else {
         UNREACHABLE();
     }
@@ -162,13 +161,11 @@ void COP1::c_impl(const u32 instruction) {
     LTRACE_FPU("c.{}.{} ${}, ${}", condition_name(condition), fmt_name(fmt), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        const f32 a = Common::bit_cast_f64_to_f32(m_fprs[fs]);
-        const f32 b = Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        const bool result = meets_condition<condition>(a, b);
+        const bool result = meets_condition<condition>(m_fprs[fs].as_f32, m_fprs[ft].as_f32);
         m_fcr31.flags.condition = result;
         m_condition_signal = result;
     } else if (fmt == Format::DoubleFloating) {
-        const bool result = meets_condition<condition>(m_fprs[fs], m_fprs[ft]);
+        const bool result = meets_condition<condition>(m_fprs[fs].as_f64, m_fprs[ft].as_f64);
         m_fcr31.flags.condition = result;
         m_condition_signal = result;
     } else {
@@ -184,14 +181,11 @@ void COP1::cvt_d(const u32 instruction) {
 
     switch (fmt) {
         case Format::SingleFloating: {
-            const f32 float_bits = Common::bit_cast_f64_to_f32(m_fprs[fs]);
-            m_fprs[fd] = static_cast<f64>(float_bits);
+            m_fprs[fd].as_f64 = static_cast<f64>(m_fprs[fs].as_f32);
             break;
         }
-
         case Format::Word: {
-            const u32 word = static_cast<u32>(std::bit_cast<u64>(m_fprs[fs]));
-            m_fprs[fd] = static_cast<f64>(word);
+            m_fprs[fd].as_f64 = static_cast<f64>(m_fprs[fs].as_u32);
             break;
         }
 
@@ -208,16 +202,11 @@ void COP1::cvt_s(const u32 instruction) {
 
     switch (fmt) {
         case Format::DoubleFloating: {
-            const f32 double_to_float = static_cast<f32>(m_fprs[fs]);
-            const u64 float_bits = std::bit_cast<u32>(double_to_float);
-            m_fprs[fd] = std::bit_cast<f64>(float_bits);
+            m_fprs[fd].as_f32 = static_cast<f32>(m_fprs[fs].as_f64);
             break;
         }
         case Format::Word: {
-            const u32 original_word = static_cast<u32>(std::bit_cast<u64>(m_fprs[fs]));
-            const f32 word_to_float = static_cast<f32>(original_word);
-            const u64 float_bits = std::bit_cast<u32>(word_to_float);
-            m_fprs[fd] = std::bit_cast<f64>(float_bits);
+            m_fprs[fd].as_f32 = static_cast<f32>(m_fprs[fs].as_u32);
             break;
         }
 
@@ -234,10 +223,9 @@ void COP1::div(const u32 instruction) {
     LTRACE_FPU("div.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) / Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
+        m_fprs[fd].as_f32 = m_fprs[fs].as_f32 / m_fprs[ft].as_f32;
     } else if (fmt == Format::DoubleFloating) {
-        m_fprs[fd] = m_fprs[fs] / m_fprs[ft];
+        m_fprs[fd].as_f64 = m_fprs[fs].as_f64 / m_fprs[ft].as_f64;
     } else {
         UNREACHABLE();
     }
@@ -260,10 +248,9 @@ void COP1::mul(const u32 instruction) {
     LTRACE_FPU("mul.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) * Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
+        m_fprs[fd].as_f32 = m_fprs[fs].as_f32 * m_fprs[ft].as_f32;
     } else if (fmt == Format::DoubleFloating) {
-        m_fprs[fd] = m_fprs[fs] * m_fprs[ft];
+        m_fprs[fd].as_f64 = m_fprs[fs].as_f64 * m_fprs[ft].as_f64;
     } else {
         UNREACHABLE();
     }
@@ -277,10 +264,9 @@ void COP1::sub(const u32 instruction) {
     LTRACE_FPU("sub.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) - Common::bit_cast_f64_to_f32(m_fprs[ft]);
-        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
+        m_fprs[fd].as_f32 = m_fprs[fs].as_f32 - m_fprs[ft].as_f32;
     } else if (fmt == Format::DoubleFloating) {
-        m_fprs[fd] = m_fprs[fs] - m_fprs[ft];
+        m_fprs[fd].as_f64 = m_fprs[fs].as_f64 - m_fprs[ft].as_f64;
     } else {
         UNREACHABLE();
     }
@@ -293,11 +279,9 @@ void COP1::trunc_w(const u32 instruction) {
     LTRACE_FPU("trunc.w.{} ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs));
 
     if (fmt == Format::SingleFloating) {
-        const u32 truncated = static_cast<u32>(Common::bit_cast_f64_to_f32(m_fprs[fs]));
-        m_fprs[fd] = Common::bit_cast_u32_to_f64(truncated);
+        m_fprs[fd].as_u32 = static_cast<u32>(m_fprs[fs].as_f32);
     } else if (fmt == Format::DoubleFloating) {
-        const u32 truncated = static_cast<u32>(m_fprs[fs]);
-        m_fprs[fd] = Common::bit_cast_u32_to_f64(truncated);
+        m_fprs[fd].as_u32 = static_cast<u32>(m_fprs[fs].as_f64);
     } else {
         UNREACHABLE();
     }

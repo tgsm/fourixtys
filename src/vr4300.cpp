@@ -1073,7 +1073,7 @@ void VR4300::dmfc1(const u32 instruction) {
     const auto fs = m_cop1.get_fs(instruction);
     LTRACE_VR4300("dmfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
-    m_gprs[rt] = std::bit_cast<u64>(m_cop1.get_reg(fs));
+    m_gprs[rt] = m_cop1.get_reg(fs).as_u64;
 }
 
 void VR4300::dmtc0(const u32 instruction) {
@@ -1472,11 +1472,11 @@ void VR4300::lwc1(const u32 instruction) {
         m_cop1.set_reg(ft, word);
     } else {
         if (ft % 2 == 0) {
-            u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(ft)), 32);
+            u64 double_bits = Common::highest_bits(m_cop1.get_reg(ft).as_u64, 32);
             double_bits |= word;
             m_cop1.set_reg(ft, double_bits);
         } else {
-            u64 double_bits = Common::lowest_bits(std::bit_cast<u64>(m_cop1.get_reg(ft - 1)), 32);
+            u64 double_bits = Common::lowest_bits(m_cop1.get_reg(ft - 1).as_u64, 32);
             double_bits |= (static_cast<u64>(word) << 32);
             m_cop1.set_reg(ft, double_bits);
         }
@@ -1556,12 +1556,12 @@ void VR4300::mfc1(const u32 instruction) {
     LTRACE_VR4300("mfc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
     if (m_cop0.status.flags.fr) {
-        m_gprs[rt] = static_cast<u32>(std::bit_cast<u64>(m_cop1.get_reg(fs)));
+        m_gprs[rt] = m_cop1.get_reg(fs).as_u32;
     } else {
         if (fs % 2 == 0) {
-            m_gprs[rt] = Common::bit_range<31, 0>(std::bit_cast<u64>(m_cop1.get_reg(fs)));
+            m_gprs[rt] = Common::bit_range<31, 0>(m_cop1.get_reg(fs).as_u64);
         } else {
-            m_gprs[rt] = Common::bit_range<63, 32>(std::bit_cast<u64>(m_cop1.get_reg(fs - 1)));
+            m_gprs[rt] = Common::bit_range<63, 32>(m_cop1.get_reg(fs - 1).as_u64);
         }
     }
 }
@@ -1594,16 +1594,16 @@ void VR4300::mtc1(const u32 instruction) {
     LTRACE_VR4300("mtc1 ${}, ${}", reg_name(rt), m_cop1.reg_name(fs));
 
     if (m_cop0.status.flags.fr) {
-        u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(fs)), 32);
+        u64 double_bits = Common::highest_bits(m_cop1.get_reg(fs).as_u64, 32);
         double_bits |= static_cast<u32>(m_gprs[rt]);
         m_cop1.set_reg(fs, double_bits);
     } else {
         if (fs % 2 == 0) {
-            u64 double_bits = Common::highest_bits(std::bit_cast<u64>(m_cop1.get_reg(fs)), 32);
+            u64 double_bits = Common::highest_bits(m_cop1.get_reg(fs).as_u64, 32);
             double_bits |= static_cast<u32>(m_gprs[rt]);
             m_cop1.set_reg(fs, double_bits);
         } else {
-            u64 double_bits = Common::lowest_bits(std::bit_cast<u64>(m_cop1.get_reg(fs)), 32);
+            u64 double_bits = Common::lowest_bits(m_cop1.get_reg(fs).as_u64, 32);
             double_bits |= (m_gprs[rt] << 32);
             m_cop1.set_reg(fs, double_bits);
         }
@@ -1730,7 +1730,7 @@ void VR4300::sdc1(const u32 instruction) {
     LTRACE_VR4300("sdc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
 
     if (m_cop0.status.flags.fr) {
-        m_system.mmu().write64(m_gprs[base] + offset, std::bit_cast<u64>(m_cop1.get_reg(ft)));
+        m_system.mmu().write64(m_gprs[base] + offset, m_cop1.get_reg(ft).as_u64);
     } else {
         UNIMPLEMENTED();
     }
@@ -1935,8 +1935,7 @@ void VR4300::swc1(const u32 instruction) {
     LTRACE_VR4300("swc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
 
     if (m_cop0.status.flags.fr) {
-        const f32 float_bits = Common::bit_cast_f64_to_f32(m_cop1.get_reg(ft));
-        m_system.mmu().write32(m_gprs[base] + offset, std::bit_cast<u32>(float_bits));
+        m_system.mmu().write32(m_gprs[base] + offset, m_cop1.get_reg(ft).as_u32);
     } else {
         UNIMPLEMENTED();
     }

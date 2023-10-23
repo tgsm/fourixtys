@@ -49,9 +49,16 @@ public:
     };
     static char fmt_name(Format fmt);
 
-    f64 get_reg(u32 reg) const { return m_fprs[reg]; }
+    union FPR {
+        u32 as_u32;
+        f32 as_f32;
+        u64 as_u64;
+        f64 as_f64;
+    };
+
+    FPR get_reg(u32 reg) const { return m_fprs[reg]; }
     void set_reg(u32 reg, u64 value) {
-        m_fprs[reg] = std::bit_cast<f64>(value);
+        m_fprs[reg].as_u64 = value;
     }
 
 private:
@@ -59,7 +66,7 @@ private:
     VR4300& m_vr4300;
 
     std::array<u64, 32> m_fgrs {};
-    std::array<f64, 32> m_fprs {};
+    std::array<FPR, 32> m_fprs {};
 
     union {
         u32 raw {};
