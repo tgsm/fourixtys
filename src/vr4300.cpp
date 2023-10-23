@@ -607,6 +607,9 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
                     case 0b00001:
                         m_cop1.bc1t(instruction);
                         return;
+                    case 0b00010:
+                        m_cop1.bc1fl(instruction);
+                        return;
                     case 0b00011:
                         m_cop1.bc1tl(instruction);
                         return;
@@ -631,8 +634,16 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
             m_cop1.sub(instruction);
             return;
 
+        case 0b000010:
+            m_cop1.mul(instruction);
+            return;
+
         case 0b000011:
             m_cop1.div(instruction);
+            return;
+
+        case 0b000110:
+            m_cop1.mov(instruction);
             return;
 
         case 0b001101:

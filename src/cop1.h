@@ -111,6 +111,7 @@ private:
 
     void add(u32 instruction);
     void bc1f(u32 instruction);
+    void bc1fl(u32 instruction);
     void bc1t(u32 instruction);
     void bc1tl(u32 instruction);
     void c(u32 instruction);
@@ -119,6 +120,8 @@ private:
     void cvt_d(u32 instruction);
     void cvt_s(u32 instruction);
     void div(u32 instruction);
+    void mov(u32 instruction);
+    void mul(u32 instruction);
     void sub(u32 instruction);
     void trunc_w(u32 instruction);
 };

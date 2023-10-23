@@ -44,6 +44,8 @@ bool COP1::meets_condition(const T a, const T b) {
             return a < b;
         case Conditions::ULT:
             return a < b || (std::isnan(a) || std::isnan(b));
+        case Conditions::LT:
+            return a < b;
         case Conditions::LE:
             return a <= b;
 
@@ -55,7 +57,6 @@ bool COP1::meets_condition(const T a, const T b) {
         case Conditions::NGLE:
         case Conditions::SEQ:
         case Conditions::NGL:
-        case Conditions::LT:
         case Conditions::NGE:
         case Conditions::NGT:
         default:
@@ -74,7 +75,7 @@ void COP1::add(const u32 instruction) {
         const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) + Common::bit_cast_f64_to_f32(m_fprs[ft]);
         m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
     } else if (fmt == Format::DoubleFloating) {
-        UNIMPLEMENTED_MSG("add.D");
+        m_fprs[fd] = m_fprs[fs] + m_fprs[ft];
     } else {
         UNREACHABLE();
     }
@@ -89,6 +90,19 @@ void COP1::bc1f(const u32 instruction) {
         m_vr4300.m_pc = new_pc;
         m_vr4300.m_next_pc = m_vr4300.m_pc + 4;
         m_vr4300.m_about_to_branch = true;
+    }
+}
+
+void COP1::bc1fl(const u32 instruction) {
+    const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_vr4300.pc() + 4 + (offset << 2);
+    LTRACE_FPU("bc1fl 0x{:08X}", new_pc);
+
+    if (!m_condition_signal) {
+        m_vr4300.m_next_pc = new_pc;
+        m_vr4300.m_about_to_branch = true;
+    } else {
+        m_vr4300.m_next_pc += 4;
     }
 }
 
@@ -172,6 +186,12 @@ void COP1::cvt_d(const u32 instruction) {
     LTRACE_FPU("cvt.d.{} ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs));
 
     switch (fmt) {
+        case Format::SingleFloating: {
+            const f32 float_bits = Common::bit_cast_f64_to_f32(m_fprs[fs]);
+            m_fprs[fd] = static_cast<f64>(float_bits);
+            break;
+        }
+
         case Format::Word: {
             const u32 word = static_cast<u32>(std::bit_cast<u64>(m_fprs[fs]));
             m_fprs[fd] = static_cast<f64>(word);
@@ -226,6 +246,32 @@ void COP1::div(const u32 instruction) {
     }
 }
 
+void COP1::mov(const u32 instruction) {
+    const auto fmt = get_fmt(instruction);
+    const auto fs = get_fs(instruction);
+    const auto fd = get_fd(instruction);
+    LTRACE_FPU("mov.{} ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs));
+
+    m_fprs[fd] = m_fprs[fs];
+}
+
+void COP1::mul(const u32 instruction) {
+    const auto fmt = get_fmt(instruction);
+    const auto ft = get_ft(instruction);
+    const auto fs = get_fs(instruction);
+    const auto fd = get_fd(instruction);
+    LTRACE_FPU("mul.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
+
+    if (fmt == Format::SingleFloating) {
+        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) * Common::bit_cast_f64_to_f32(m_fprs[ft]);
+        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
+    } else if (fmt == Format::DoubleFloating) {
+        m_fprs[fd] = m_fprs[fs] * m_fprs[ft];
+    } else {
+        UNREACHABLE();
+    }
+}
+
 void COP1::sub(const u32 instruction) {
     const auto fmt = get_fmt(instruction);
     const auto ft = get_ft(instruction);
@@ -234,7 +280,8 @@ void COP1::sub(const u32 instruction) {
     LTRACE_FPU("sub.{} ${}, ${}, ${}", fmt_name(fmt), reg_name(fd), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
-        UNIMPLEMENTED_MSG("sub.S");
+        const f32 result = Common::bit_cast_f64_to_f32(m_fprs[fs]) - Common::bit_cast_f64_to_f32(m_fprs[ft]);
+        m_fprs[fd] = Common::bit_cast_f32_to_f64(result);
     } else if (fmt == Format::DoubleFloating) {
         m_fprs[fd] = m_fprs[fs] - m_fprs[ft];
     } else {
@@ -252,7 +299,8 @@ void COP1::trunc_w(const u32 instruction) {
         const u32 truncated = static_cast<u32>(Common::bit_cast_f64_to_f32(m_fprs[fs]));
         m_fprs[fd] = Common::bit_cast_u32_to_f64(truncated);
     } else if (fmt == Format::DoubleFloating) {
-        UNIMPLEMENTED_MSG("trunc.w.D");
+        const u32 truncated = static_cast<u32>(m_fprs[fs]);
+        m_fprs[fd] = Common::bit_cast_u32_to_f64(truncated);
     } else {
         UNREACHABLE();
     }
