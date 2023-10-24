@@ -1364,7 +1364,17 @@ void VR4300::ldc1(const u32 instruction) {
     if (m_cop0.status.flags.fr) {
         m_cop1.set_reg(ft, doubleword);
     } else {
-        UNIMPLEMENTED();
+        ASSERT(ft % 2 == 0);
+
+        u64 value = 0;
+
+        value = Common::highest_bits(m_cop1.get_reg(ft).as_u64, 32);
+        value |= Common::lowest_bits(doubleword, 32);
+        m_cop1.set_reg(ft, value);
+
+        value = Common::highest_bits(m_cop1.get_reg(ft + 1).as_u64, 32);
+        value |= Common::bit_range<63, 32>(doubleword);
+        m_cop1.set_reg(ft + 1, value);
     }
 }
 
@@ -1753,10 +1763,16 @@ void VR4300::sdc1(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("sdc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
 
+    const u64 address = m_gprs[base] + offset;
+
     if (m_cop0.status.flags.fr) {
-        m_system.mmu().write64(m_gprs[base] + offset, m_cop1.get_reg(ft).as_u64);
+        m_system.mmu().write64(address, m_cop1.get_reg(ft).as_u64);
     } else {
-        UNIMPLEMENTED();
+        ASSERT(ft % 2 == 0);
+
+        u64 doubleword = m_cop1.get_reg(ft + 1).as_u32;
+        doubleword |= static_cast<u64>(m_cop1.get_reg(ft).as_u32) << 32;
+        m_system.mmu().write64(address, doubleword);
     }
 }
 
@@ -1958,10 +1974,16 @@ void VR4300::swc1(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("swc1 ${}, 0x{:04X}(${})", m_cop1.reg_name(ft), offset, reg_name(base));
 
+    const u64 address = m_gprs[base] + offset;
+
     if (m_cop0.status.flags.fr) {
-        m_system.mmu().write32(m_gprs[base] + offset, m_cop1.get_reg(ft).as_u32);
+        m_system.mmu().write32(address, m_cop1.get_reg(ft).as_u32);
     } else {
-        UNIMPLEMENTED();
+        if (ft % 2 == 0) {
+            m_system.mmu().write32(address, m_cop1.get_reg(ft).as_u32);
+        } else {
+            m_system.mmu().write32(address, m_cop1.get_reg(ft - 1).as_u32);
+        }
     }
 }
 
