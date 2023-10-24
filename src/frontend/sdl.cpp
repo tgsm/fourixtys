@@ -42,18 +42,32 @@ void render_screen(const N64& n64) {
         case 0: // Blank
             break;
 
-        case 2:
-            g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_BGRA5551, SDL_TEXTUREACCESS_STATIC, width, height);
+        case 2: {
+            g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_RGBA5551, SDL_TEXTUREACCESS_STATIC, width, height);
             if (!g_texture) {
                 LERROR("Draw: failed to create SDL texture: {} (color_format={}, width={}, height={})", SDL_GetError(), color_format, width, height);
                 return;
             }
 
-            SDL_UpdateTexture(g_texture, nullptr, n64.mmu().rdram().data() + origin, width * 2);
+            std::vector<u16> pixel_buffer(width * height);
+
+            for (std::size_t y = 0; y < height; y++) {
+                for (std::size_t x = 0; x < width; x++) {
+                    const auto pixel_buffer_offset = (y * width + x);
+                    const auto rdram_offset = origin + (pixel_buffer_offset * sizeof(u16));
+
+                    u16 color = n64.mmu().rdram().at(rdram_offset) << 8;
+                    color |= n64.mmu().rdram().at(rdram_offset + 1);
+                    pixel_buffer.at(pixel_buffer_offset) = color;
+                }
+            }
+
+            SDL_UpdateTexture(g_texture, nullptr, pixel_buffer.data(), width * sizeof(u16));
             SDL_RenderCopy(g_renderer, g_texture, nullptr, nullptr);
             SDL_RenderPresent(g_renderer);
 
             break;
+        }
 
         case 3:
             g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, width, height);
@@ -62,7 +76,7 @@ void render_screen(const N64& n64) {
                 return;
             }
 
-            SDL_UpdateTexture(g_texture, nullptr, n64.mmu().rdram().data() + origin, width * 4);
+            SDL_UpdateTexture(g_texture, nullptr, n64.mmu().rdram().data() + origin, width * sizeof(u32));
             SDL_RenderCopy(g_renderer, g_texture, nullptr, nullptr);
             SDL_RenderPresent(g_renderer);
 
