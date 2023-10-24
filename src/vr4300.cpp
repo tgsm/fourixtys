@@ -227,6 +227,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             bnel(instruction);
             return;
 
+        case 0b010111:
+            bgtzl(instruction);
+            return;
+
         case 0b011000:
             daddi(instruction);
             return;
@@ -545,6 +549,10 @@ void VR4300::decode_and_execute_regimm_instruction(u32 instruction) {
             bgez(instruction);
             return;
 
+        case 0b00010:
+            bltzl(instruction);
+            return;
+
         case 0b00011:
             bgezl(instruction);
             return;
@@ -860,6 +868,21 @@ void VR4300::bgtz(const u32 instruction) {
     m_entering_delay_slot = true;
 }
 
+void VR4300::bgtzl(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bgtzl ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) > 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+        m_entering_delay_slot = true;
+    } else {
+        m_next_pc += 4;
+    }
+}
+
 void VR4300::blez(const u32 instruction) {
     const auto rs = get_rs(instruction);
     [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
@@ -886,6 +909,21 @@ void VR4300::bltz(const u32 instruction) {
     }
 
     m_entering_delay_slot = true;
+}
+
+void VR4300::bltzl(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    [[maybe_unused]] const s16 offset = Common::bit_range<15, 0>(instruction);
+    const u64 new_pc = m_pc + 4 + (offset << 2);
+    LTRACE_VR4300("bltzl ${}, 0x{:04X}", reg_name(rs), new_pc);
+
+    if (static_cast<s64>(m_gprs[rs]) < 0) {
+        m_next_pc = new_pc;
+        m_about_to_branch = true;
+        m_entering_delay_slot = true;
+    } else {
+        m_next_pc += 4;
+    }
 }
 
 void VR4300::bne(const u32 instruction) {

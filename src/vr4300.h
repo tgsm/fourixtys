@@ -120,8 +120,10 @@ private:
     void bgezal(u32 instruction);
     void bgezl(u32 instruction);
     void bgtz(u32 instruction);
+    void bgtzl(u32 instruction);
     void blez(u32 instruction);
     void bltz(u32 instruction);
+    void bltzl(u32 instruction);
     void bne(u32 instruction);
     void bnel(u32 instruction);
     void cache(u32 instruction);
