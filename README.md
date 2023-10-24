@@ -1,5 +1,5 @@
 # fourixtys
-A work-in-progress Nintendo 64 emulator. It does not boot any games yet. It does, however, pass some tests on [n64-systemtest](https://github.com/lemmy-64/n64-systemtest).
+A work-in-progress Nintendo 64 emulator. It does not boot many games yet. It does, however, pass some tests on [n64-systemtest](https://github.com/lemmy-64/n64-systemtest).
 
 ## Building (Linux)
 Install [CMake](https://cmake.org) if you haven't already. You'll also need [fmtlib](https://fmt.dev) and [SDL2](https://www.libsdl.org/).
