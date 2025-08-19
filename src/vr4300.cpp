@@ -90,6 +90,9 @@ void VR4300::throw_exception(const ExceptionCodes code) {
             UNIMPLEMENTED();
         case ExceptionCodes::AddressErrorLoad:
         case ExceptionCodes::AddressErrorStore:
+        case ExceptionCodes::Syscall:
+        case ExceptionCodes::Breakpoint:
+        case ExceptionCodes::ReservedInstruction:
         case ExceptionCodes::CoprocessorUnusable:
         case ExceptionCodes::ArithmeticOverflow:
             m_next_pc = 0xFFFFFFFF80000180;
@@ -247,6 +250,10 @@ void VR4300::decode_and_execute_instruction(u32 instruction) {
             ldr(instruction);
             return;
 
+        case 0b011111:
+            reserved(instruction);
+            return;
+
         case 0b100000:
             lb(instruction);
             return;
@@ -382,6 +389,14 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         case 0b001001:
             jalr(instruction);
+            return;
+
+        case 0b001100:
+            syscall(instruction);
+            return;
+
+        case 0b001101:
+            break_(instruction);
             return;
 
         case 0b001111:
@@ -955,6 +970,13 @@ void VR4300::bnel(const u32 instruction) {
     } else {
         m_next_pc += 4;
     }
+}
+
+void VR4300::break_(const u32 instruction) {
+    [[maybe_unused]] const auto code = Common::bit_range<25, 6>(instruction);
+    LTRACE_VR4300("break (0x{:X})", code);
+
+    throw_exception(ExceptionCodes::Breakpoint);
 }
 
 void VR4300::cache(const u32 instruction) {
@@ -2070,6 +2092,13 @@ void VR4300::sync(const u32 instruction) {
     LTRACE_VR4300("sync");
 }
 
+void VR4300::syscall(const u32 instruction) {
+    [[maybe_unused]] const auto code = Common::bit_range<25, 6>(instruction);
+    LTRACE_VR4300("syscall (0x{:X})", code);
+
+    throw_exception(ExceptionCodes::Syscall);
+}
+
 void VR4300::teq(const u32 instruction) {
     const auto rs = get_rs(instruction);
     const auto rt = get_rt(instruction);
@@ -2103,4 +2132,10 @@ void VR4300::xori(const u32 instruction) {
     LTRACE_VR4300("xori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
     m_gprs[rt] = m_gprs[rs] ^ imm;
+}
+
+void VR4300::reserved([[maybe_unused]] const u32 instruction) {
+    LTRACE_VR4300("[reserved]");
+
+    throw_exception(ExceptionCodes::ReservedInstruction);
 }

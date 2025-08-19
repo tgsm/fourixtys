@@ -126,6 +126,7 @@ private:
     void bltzl(u32 instruction);
     void bne(u32 instruction);
     void bnel(u32 instruction);
+    void break_(u32 instruction);
     void cache(u32 instruction);
     void cfc1(u32 instruction);
     void ctc1(u32 instruction);
@@ -212,8 +213,11 @@ private:
     void swl(u32 instruction);
     void swr(u32 instruction);
     void sync(u32 instruction);
+    void syscall(u32 instruction);
     void teq(u32 instruction);
     void tlbwi(u32 instruction);
     void xor_(u32 instruction);
     void xori(u32 instruction);
+
+    void reserved(u32 instruction);
 };
