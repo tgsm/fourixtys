@@ -208,6 +208,12 @@ T MMU::read(const u32 address) {
             switch (address) {
                 case 0x04040010: // RSP status
                     return 1;
+                case 0x04040014: // DMA full
+                    // FIXME: This is a mirror of bit 3 in SP_STATUS
+                    return 0;
+                case 0x04040018: // DMA busy
+                    // FIXME: This is a mirror of bit 2 in SP_STATUS
+                    return 0;
                 case 0x04080000: // RSP program counter
                     return 0;
 
