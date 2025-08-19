@@ -17,6 +17,8 @@ public:
         if constexpr (Common::TypeIsSame<T, u8>) {
             return m_rom.at(address);
         } else if constexpr (Common::TypeIsSame<T, u16>) {
+            // In 16bit reads from the cartridge, every other halfword is missed
+            address = (address + 3) & ~3;
             return m_rom.at(address + 0) << 8 |
                    m_rom.at(address + 1) << 0;
         } else if constexpr (Common::TypeIsSame<T, u32>) {
