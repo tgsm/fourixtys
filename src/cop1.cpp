@@ -2,6 +2,8 @@
 #include "cop1.h"
 #include "vr4300.h"
 
+#define LTRACE_FPU(disasm_fmt, ...) fmt::print("trace: {:016X}: {:08X}  " disasm_fmt "\n", u64(s32(m_vr4300.pc())), instruction, ##__VA_ARGS__)
+
 std::string COP1::reg_name(const u32 reg) {
     if (reg <= 31) {
         return fmt::format("f{}", reg);

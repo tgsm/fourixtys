@@ -2,6 +2,8 @@
 #include "vr4300.h"
 #include "n64.h"
 
+#define LTRACE_VR4300(disasm_fmt, ...) if (m_enable_trace_logging) fmt::print("trace: {:016X}: {:08X}  " disasm_fmt "\n", u64(s32(m_pc)), instruction, ##__VA_ARGS__)
+
 VR4300::VR4300(N64& system) : m_system(system), m_cop1(*this) {
     simulate_pif_routine();
 }
