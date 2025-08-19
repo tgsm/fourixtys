@@ -114,6 +114,8 @@ private:
     void set_xcontext(u64 raw);
 
     u32 parity_error {};
+    void set_parity_error(u32 value);
+
     u32 cache_error {};
     u32 tag_lo {};
     u32 tag_hi {};

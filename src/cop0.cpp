@@ -87,6 +87,8 @@ u64 COP0::get_reg(const u8 reg) const {
             return ll_addr;
         case 20:
             return xcontext.raw;
+        case 26:
+            return parity_error;
         case 30:
             return error_epc;
         default:
@@ -155,6 +157,9 @@ void COP0::set_reg(const u8 reg, const u64 value) {
         case 20:
             set_xcontext(value);
             return;
+        case 26:
+            set_parity_error(value);
+            return;
         case 28:
             tag_lo = static_cast<u32>(value);
             return;
@@ -208,6 +213,12 @@ void COP0::set_xcontext(const u64 raw) {
     xcontext.raw = raw;
 
     xcontext.raw &= ~Common::bit_mask_from_range<3, 0, u64>();
+}
+
+void COP0::set_parity_error(const u32 value) {
+    parity_error = value;
+
+    parity_error &= ~Common::bit_mask_from_range<31, 8, u32>();
 }
 
 void COP0::increment_cycle_count(u32 cycles) {
