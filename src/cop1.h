@@ -32,7 +32,6 @@ public:
         LE,
         NGT,
     };
-    static std::string_view condition_name(Conditions condition);
 
     enum Format {
         SingleFloating = 16,

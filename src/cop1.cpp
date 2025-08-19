@@ -12,9 +12,10 @@ std::string COP1::reg_name(const u32 reg) {
     UNIMPLEMENTED_MSG("unimplemented name for COP1 reg {}", reg);
 }
 
-std::string_view COP1::condition_name(COP1::Conditions condition) {
+template <COP1::Conditions condition>
+static constexpr std::string_view condition_name() {
     using namespace std::string_view_literals;
-    static constexpr std::array<std::string_view, 16> condition_names = {
+    constexpr std::array<std::string_view, 16> condition_names = {
         "F"sv, "UN"sv, "EQ"sv, "UEQ"sv, "OLT"sv, "ULT"sv, "OLE"sv, "ULE"sv, "SF"sv, "NGLE"sv, "SEQ"sv, "NGL"sv, "LT"sv, "NGE"sv, "LE"sv, "NGT"sv,
     };
     return condition_names.at(static_cast<std::size_t>(condition));
@@ -166,7 +167,7 @@ void COP1::c_impl(const u32 instruction) {
     const auto fmt = get_fmt(instruction);
     const auto ft = get_ft(instruction);
     const auto fs = get_fs(instruction);
-    LTRACE_FPU("c.{}.{} ${}, ${}", condition_name(condition), fmt_name(fmt), reg_name(fs), reg_name(ft));
+    LTRACE_FPU("c.{}.{} ${}, ${}", condition_name<condition>(), fmt_name(fmt), reg_name(fs), reg_name(ft));
 
     if (fmt == Format::SingleFloating) {
         const bool result = meets_condition<condition>(m_fprs[fs].as_f32, m_fprs[ft].as_f32);
