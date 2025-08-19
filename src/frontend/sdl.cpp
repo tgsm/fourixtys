@@ -72,7 +72,7 @@ void render_screen(const N64& n64) {
         case 3:
             g_texture = SDL_CreateTexture(g_renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STATIC, width, height);
             if (!g_texture) {
-                LERROR("Draw: failed to create SDL texture: {} (color_format={}, width={}, height={})", SDL_GetError(), width, height);
+                LERROR("Draw: failed to create SDL texture: {} (color_format={}, width={}, height={})", SDL_GetError(), color_format, width, height);
                 return;
             }
 
