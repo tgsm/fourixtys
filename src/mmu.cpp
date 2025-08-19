@@ -374,10 +374,10 @@ void MMU::write(const u32 address, const T value) {
         case PI_REGISTERS_BASE ... PI_REGISTERS_END:
             switch (address) {
                 case PI_REG_DRAM_ADDRESS:
-                    m_pi.set_dram_address(value & ~0b1);
+                    m_pi.set_dram_address(value);
                     return;
                 case PI_REG_DMA_CART_ADDRESS:
-                    m_pi.set_dma_cart_address(value & ~0b1);
+                    m_pi.set_dma_cart_address(value);
                     return;
                 case PI_REG_DMA_WRITE_LENGTH:
                     m_pi.set_dma_write_length(value);
@@ -386,7 +386,9 @@ void MMU::write(const u32 address, const T value) {
                     if (Common::is_bit_enabled<1>(value)) {
                         m_mi.cancel_interrupt(MI::InterruptFlags::PI);
                     }
-                    // FIXME: Reset DMA controller and stop any transfer being done if bit 0 is set.
+                    if (Common::is_bit_enabled<0>(value)) {
+                        m_pi.reset();
+                    }
                     return;
                 default:
                     LERROR("Unrecognized write{} 0x{:08X} to PI register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);

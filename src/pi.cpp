@@ -14,6 +14,9 @@ void PI::run_dma_transfer_to_rdram() {
         }
     }
 
+    m_dma_cart_address += (m_dma_write_length + 1) & ~1;
+    m_dram_address += (m_dma_write_length + 7) & ~7;
+
     Common::enable_bits<3>(m_status);
     m_mmu.mi().request_interrupt(MI::InterruptFlags::PI);
 }
