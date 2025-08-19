@@ -82,7 +82,8 @@ private:
             u32 rounding_mode : 2;
             u32 flags : 5;
             u32 enables : 5;
-            u32 cause : 6;
+            u32 causes : 5;
+            bool cause_unimplemented_operation : 1;
             u32 : 5;
             bool condition : 1;
             bool fs : 1;

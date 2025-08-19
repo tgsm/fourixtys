@@ -97,6 +97,7 @@ void VR4300::throw_exception(const ExceptionCodes code) {
         case ExceptionCodes::ReservedInstruction:
         case ExceptionCodes::CoprocessorUnusable:
         case ExceptionCodes::ArithmeticOverflow:
+        case ExceptionCodes::FloatingPoint:
             m_next_pc = 0xFFFFFFFF80000180;
             break;
         case ExceptionCodes::Interrupt:
@@ -649,7 +650,7 @@ void VR4300::decode_and_execute_cop1_instruction(u32 instruction) {
                 return;
 
             case 0b00110:
-                cfc1(instruction);
+                ctc1(instruction);
                 return;
 
             case 0b01000: {
@@ -987,7 +988,7 @@ void VR4300::cache(const u32 instruction) {
     const s16 offset = Common::bit_range<15, 0>(instruction);
     LTRACE_VR4300("cache {}, 0x{:04X}(${})", op, offset, reg_name(base));
 
-    LWARN("CACHE is stubbed");
+    // LWARN("CACHE is stubbed");
 }
 
 void VR4300::cfc1(const u32 instruction) {
@@ -1009,6 +1010,9 @@ void VR4300::ctc1(const u32 instruction) {
 
     if (fs == 31) {
         m_cop1.m_fcr31.raw = m_gprs[rt];
+        if (m_cop1.m_fcr31.flags.causes & m_cop1.m_fcr31.flags.enables || m_cop1.m_fcr31.flags.cause_unimplemented_operation) {
+            throw_exception(ExceptionCodes::FloatingPoint);
+        }
     } else {
         UNIMPLEMENTED();
     }
@@ -1354,10 +1358,14 @@ void VR4300::jalr(const u32 instruction) {
 }
 
 void VR4300::jr(const u32 instruction) {
-    // FIXME: If these low-order two bits are not zero, an address exception will occur when the jump target instruction is fetched.
-
     const auto rs = get_rs(instruction);
     LTRACE_VR4300("jr ${}", reg_name(rs));
+
+    if ((m_gprs[rs] & 0b11) != 0) [[unlikely]] {
+        m_pc = m_gprs[rs];
+        throw_address_error_exception<ExceptionCodes::AddressErrorLoad>(m_pc);
+        return;
+    }
 
     m_next_pc = m_gprs[rs];
     m_about_to_branch = true;
