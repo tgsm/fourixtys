@@ -246,12 +246,18 @@ T MMU::read(const u32 address) {
             return m_system.gamepak().read<T>(address - 0x10000000);
 
         case PIF_RAM_BASE ... PIF_RAM_END:
-            if constexpr (Common::TypeIsSame<T, u32>) {
+            if constexpr (Common::TypeIsSame<T, u8>) {
+                return m_pif_ram.at(address - PIF_RAM_BASE);
+            } else if constexpr (Common::TypeIsSame<T, u16>) {
                 const u32 idx = address - PIF_RAM_BASE;
-                return m_sp_imem.at(idx + 0) << 24 |
-                       m_sp_imem.at(idx + 1) << 16 |
-                       m_sp_imem.at(idx + 2) << 8  |
-                       m_sp_imem.at(idx + 3) << 0;
+                return m_pif_ram.at(idx + 0) << 8 |
+                       m_pif_ram.at(idx + 1) << 0;
+            } else if constexpr (Common::TypeIsSame<T, u32>) {
+                const u32 idx = address - PIF_RAM_BASE;
+                return m_pif_ram.at(idx + 0) << 24 |
+                       m_pif_ram.at(idx + 1) << 16 |
+                       m_pif_ram.at(idx + 2) << 8  |
+                       m_pif_ram.at(idx + 3) << 0;
             } else {
                 UNIMPLEMENTED_MSG("Unrecognized read{} from PIF RAM", Common::TypeSizeInBits<T>);
             }
@@ -434,7 +440,10 @@ void MMU::write(const u32 address, const T value) {
             }
 
         case PIF_RAM_BASE ... PIF_RAM_END:
-            if constexpr (Common::TypeIsSame<T, u32>) {
+            if constexpr (Common::TypeIsSame<T, u8>) {
+                m_pif_ram.at(address - PIF_RAM_BASE) = value;
+                return;
+            } else if constexpr (Common::TypeIsSame<T, u32>) {
                 const u32 idx = address - PIF_RAM_BASE;
                 m_pif_ram.at(idx + 0) = static_cast<u8>(Common::bit_range<31, 24>(value));
                 m_pif_ram.at(idx + 1) = static_cast<u8>(Common::bit_range<23, 16>(value));
