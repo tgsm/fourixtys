@@ -25,6 +25,15 @@ static constexpr u32 SP_IMEM_BASE              = 0x04001000;
 static constexpr u32 SP_IMEM_END               = 0x04001FFF;
 
 static constexpr u32 SP_REGISTERS_BASE         = 0x04040000;
+static constexpr u32 SP_REG_SPADDR             = 0x04040000;
+static constexpr u32 SP_REG_RAMADDR            = 0x04040004;
+static constexpr u32 SP_REG_RDLEN              = 0x04040008;
+static constexpr u32 SP_REG_WRLEN              = 0x0404000C;
+static constexpr u32 SP_REG_STATUS             = 0x04040010;
+static constexpr u32 SP_REG_DMA_FULL           = 0x04040014;
+static constexpr u32 SP_REG_DMA_BUSY           = 0x04040018;
+static constexpr u32 SP_REG_SEMAPHORE          = 0x0404001C;
+static constexpr u32 SP_REG_PC                 = 0x04080000;
 static constexpr u32 SP_REGISTERS_END          = 0x040FFFFF;
 
 static constexpr u32 DP_COMMAND_REGISTERS_BASE = 0x04100000;
@@ -206,19 +215,18 @@ T MMU::read(const u32 address) {
 
         case SP_REGISTERS_BASE ... SP_REGISTERS_END:
             switch (address) {
-                case 0x04040010: // RSP status
-                    return 1;
-                case 0x04040014: // DMA full
+                case SP_REG_STATUS:
+                    return m_system.rsp().status();
+                case SP_REG_DMA_FULL:
                     // FIXME: This is a mirror of bit 3 in SP_STATUS
                     return 0;
-                case 0x04040018: // DMA busy
+                case SP_REG_DMA_BUSY:
                     // FIXME: This is a mirror of bit 2 in SP_STATUS
                     return 0;
-                case 0x04080000: // RSP program counter
-                    return 0;
-
+                case SP_REG_PC:
+                    return m_system.rsp().pc();
                 default:
-                    LERROR("Unrecognized read{} from SP register 0x{:08X}", Common::TypeSizeInBits<T>, address);
+                    LERROR("Unrecognized read{} from RSP register 0x{:08X}", Common::TypeSizeInBits<T>, address);
                     return T(-1);
             }
 
@@ -336,6 +344,19 @@ void MMU::write(const u32 address, const T value) {
                 return;
             } else {
                 UNIMPLEMENTED_MSG("Unimplemented write{} 0x{:08X} to SP imem", Common::TypeSizeInBits<T>, value);
+            }
+
+        case SP_REGISTERS_BASE ... SP_REGISTERS_END:
+            switch (address) {
+                case SP_REG_STATUS:
+                    m_system.rsp().set_status(value);
+                    return;
+                case SP_REG_PC:
+                    m_system.rsp().set_pc(value);
+                    return;
+                default:
+                    LERROR("Unrecognized write{} 0x{:08X} to RSP register 0x{:08X}", Common::TypeSizeInBits<T>, value, address);
+                    return;
             }
 
         case MI_REGISTERS_BASE ... MI_REGISTERS_END:

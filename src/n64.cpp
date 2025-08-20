@@ -11,6 +11,9 @@ void N64::run() {
     }
 
     m_vr4300.step();
+    if (!m_rsp.halted()) {
+        m_rsp.step();
+    }
 
     // FIXME: Get the number of cycles spent from VR4300
     static constexpr u32 CyclesStub = 3;

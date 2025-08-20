@@ -36,6 +36,8 @@ set(SOURCES
     src/pi.h
     src/pif.cpp
     src/pif.h
+    src/rsp.cpp
+    src/rsp.h
     src/si.cpp
     src/si.h
     src/vi.cpp
