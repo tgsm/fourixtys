@@ -97,6 +97,7 @@ void VR4300::throw_exception(const ExceptionCodes code) {
         case ExceptionCodes::ReservedInstruction:
         case ExceptionCodes::CoprocessorUnusable:
         case ExceptionCodes::ArithmeticOverflow:
+        case ExceptionCodes::Trap:
         case ExceptionCodes::FloatingPoint:
             m_next_pc = 0xFFFFFFFF80000180;
             break;
@@ -524,6 +525,10 @@ void VR4300::decode_and_execute_special_instruction(u32 instruction) {
 
         case 0b110100:
             teq(instruction);
+            return;
+
+        case 0b110110:
+            tne(instruction);
             return;
 
         case 0b111000:
@@ -2116,6 +2121,17 @@ void VR4300::teq(const u32 instruction) {
     LTRACE_VR4300("teq ${}, ${} ({})", reg_name(rs), reg_name(rt), code);
 
     if (m_gprs[rs] == m_gprs[rt]) {
+        throw_exception(ExceptionCodes::Trap);
+    }
+}
+
+void VR4300::tne(const u32 instruction) {
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto code = Common::bit_range<15, 6>(instruction);
+    LTRACE_VR4300("tne ${}, ${} ({})", reg_name(rs), reg_name(rt), code);
+
+    if (m_gprs[rs] != m_gprs[rt]) {
         throw_exception(ExceptionCodes::Trap);
     }
 }

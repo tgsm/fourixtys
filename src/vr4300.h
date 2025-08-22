@@ -215,6 +215,7 @@ private:
     void sync(u32 instruction);
     void syscall(u32 instruction);
     void teq(u32 instruction);
+    void tne(u32 instruction);
     void tlbwi(u32 instruction);
     void xor_(u32 instruction);
     void xori(u32 instruction);
