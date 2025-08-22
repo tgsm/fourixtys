@@ -227,9 +227,9 @@ void RSP::execute_regimm_instruction(const u32 instruction) {
 }
 
 void RSP::add(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("add ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
     // FIXME: Does this throw an exception on overflow?
 
@@ -237,8 +237,8 @@ void RSP::add(const u32 instruction) {
 }
 
 void RSP::addi(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const s16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("addi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
     // FIXME: Does this throw an exception on overflow?
@@ -247,8 +247,8 @@ void RSP::addi(const u32 instruction) {
 }
 
 void RSP::addiu(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const s16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("addiu ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
@@ -256,26 +256,26 @@ void RSP::addiu(const u32 instruction) {
 }
 
 void RSP::addu(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("addu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = m_gprs[rs] + m_gprs[rt];
 }
 
 void RSP::and_(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("and ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = m_gprs[rs] & m_gprs[rt];
 }
 
 void RSP::andi(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("andi ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
@@ -283,8 +283,8 @@ void RSP::andi(const u32 instruction) {
 }
 
 void RSP::beq(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("beq ${}, ${}, 0x{:03X}", reg_name(rs), reg_name(rt), new_pc);
@@ -298,7 +298,7 @@ void RSP::beq(const u32 instruction) {
 }
 
 void RSP::bgez(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bgez ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -312,7 +312,7 @@ void RSP::bgez(const u32 instruction) {
 }
 
 void RSP::bgezal(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bgezal ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -327,7 +327,7 @@ void RSP::bgezal(const u32 instruction) {
 }
 
 void RSP::bgtz(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bgtz ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -341,7 +341,7 @@ void RSP::bgtz(const u32 instruction) {
 }
 
 void RSP::blez(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("blez ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -355,7 +355,7 @@ void RSP::blez(const u32 instruction) {
 }
 
 void RSP::bltz(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bltz ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -369,7 +369,7 @@ void RSP::bltz(const u32 instruction) {
 }
 
 void RSP::bltzal(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bltzal ${}, 0x{:03X}", reg_name(rs), new_pc);
@@ -384,8 +384,8 @@ void RSP::bltzal(const u32 instruction) {
 }
 
 void RSP::bne(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const u16 offset = Common::bit_range<15, 0>(instruction);
     const u16 new_pc = (m_pc + 4 + (offset << 2)) & 0xFFF;
     LTRACE_RSP("bne ${}, ${}, 0x{:03X}", reg_name(rs), reg_name(rt), new_pc);
@@ -432,8 +432,8 @@ void RSP::jal(const u32 instruction) {
 }
 
 void RSP::jalr(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("jalr ${}, ${}", reg_name(rd), reg_name(rs));
 
     m_next_pc = (m_gprs[rs] & ~0b11) & 0xFFF;
@@ -443,7 +443,7 @@ void RSP::jalr(const u32 instruction) {
 }
 
 void RSP::jr(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
+    const auto rs = get_rs(instruction);
     LTRACE_RSP("jr ${}", reg_name(rs));
 
     m_next_pc = (m_gprs[rs] & ~0b11) & 0xFFF;
@@ -452,7 +452,7 @@ void RSP::jr(const u32 instruction) {
 }
 
 void RSP::lui(const u32 instruction) {
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("lui ${}, 0x{:04X}", reg_name(rt), imm);
 
@@ -460,26 +460,26 @@ void RSP::lui(const u32 instruction) {
 }
 
 void RSP::nor(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("nor ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = ~(m_gprs[rs] | m_gprs[rt]);
 }
 
 void RSP::or_(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("or ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = m_gprs[rs] | m_gprs[rt];
 }
 
 void RSP::ori(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("ori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 
@@ -492,8 +492,8 @@ void RSP::sll(const u32 instruction) {
         return;
     }
 
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     const u16 sa = Common::bit_range<10, 6>(instruction);
     LTRACE_RSP("sll ${}, ${}, {}", reg_name(rd), reg_name(rt), sa);
 
@@ -501,17 +501,17 @@ void RSP::sll(const u32 instruction) {
 }
 
 void RSP::sllv(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("sllv ${}, ${}, ${}", reg_name(rd), reg_name(rt), reg_name(rs));
 
     m_gprs[rd] = m_gprs[rt] << (m_gprs[rs] & 0x1F);
 }
 
 void RSP::sra(const u32 instruction) {
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     const u16 sa = Common::bit_range<10, 6>(instruction);
     LTRACE_RSP("sra ${}, ${}, {}", reg_name(rd), reg_name(rt), sa);
 
@@ -519,17 +519,17 @@ void RSP::sra(const u32 instruction) {
 }
 
 void RSP::srav(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("srav ${}, ${}, ${}", reg_name(rd), reg_name(rt), reg_name(rs));
 
     m_gprs[rd] = static_cast<s32>(m_gprs[rt]) >> (m_gprs[rs] & 0x1F);
 }
 
 void RSP::srl(const u32 instruction) {
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     const u16 sa = Common::bit_range<10, 6>(instruction);
     LTRACE_RSP("srl ${}, ${}, {}", reg_name(rd), reg_name(rt), sa);
 
@@ -537,18 +537,18 @@ void RSP::srl(const u32 instruction) {
 }
 
 void RSP::srlv(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("srlv ${}, ${}, ${}", reg_name(rd), reg_name(rt), reg_name(rs));
 
     m_gprs[rd] = m_gprs[rt] >> (m_gprs[rs] & 0x1F);
 }
 
 void RSP::sub(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("sub ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
     // FIXME: Does this throw an exception on underflow?
 
@@ -556,17 +556,17 @@ void RSP::sub(const u32 instruction) {
 }
 
 void RSP::subu(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("subu ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = m_gprs[rs] - m_gprs[rt];
 }
 
 void RSP::sw(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const s16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("sw ${}, 0x{:04X}(${})", reg_name(rt), imm, reg_name(rs));
 
@@ -575,17 +575,17 @@ void RSP::sw(const u32 instruction) {
 }
 
 void RSP::xor_(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
-    const u16 rd = get_rd(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
+    const auto rd = get_rd(instruction);
     LTRACE_RSP("xor ${}, ${}, ${}", reg_name(rd), reg_name(rs), reg_name(rt));
 
     m_gprs[rd] = m_gprs[rs] ^ m_gprs[rt];
 }
 
 void RSP::xori(const u32 instruction) {
-    const u16 rs = Common::bit_range<25, 21>(instruction);
-    const u16 rt = Common::bit_range<20, 16>(instruction);
+    const auto rs = get_rs(instruction);
+    const auto rt = get_rt(instruction);
     const u16 imm = Common::bit_range<15, 0>(instruction);
     LTRACE_RSP("xori ${}, ${}, 0x{:04X}", reg_name(rt), reg_name(rs), imm);
 

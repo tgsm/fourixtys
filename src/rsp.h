@@ -70,6 +70,14 @@ private:
         return m_reg_names.at(reg_id);
     }
 
+    ALWAYS_INLINE u32 get_rs(const u32 instruction) const {
+        return Common::bit_range<25, 21>(instruction);
+    }
+
+    ALWAYS_INLINE u32 get_rt(const u32 instruction) const {
+        return Common::bit_range<20, 16>(instruction);
+    }
+
     ALWAYS_INLINE u32 get_rd(const u32 instruction) const {
         return Common::bit_range<15, 11>(instruction);
     }
