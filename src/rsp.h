@@ -16,7 +16,10 @@ public:
     void step();
 
     u16 pc() const { return m_pc; }
-    void set_pc(u16 pc) { m_pc = (pc & ~0b11) & 0xFFF; }
+    void set_pc(u16 pc) {
+        m_pc = (pc & ~0b11) & 0xFFF;
+        m_next_pc = (m_pc + 4) & 0xFFF;
+    }
 
     bool halted() const { return m_status.flags.halted; }
 
@@ -27,7 +30,10 @@ private:
     N64& m_system;
 
     u16 m_pc;
-    bool m_halted;
+    u16 m_next_pc;
+    bool m_about_to_branch { false };
+    bool m_entering_delay_slot { false };
+    bool m_in_delay_slot { false };
     std::array<u32, 32> m_gprs {};
 
     union {
@@ -72,11 +78,40 @@ private:
 
     void execute_instruction(u32 instruction);
     void execute_special_instruction(u32 instruction);
+    void execute_regimm_instruction(u32 instruction);
 
     void add(u32 instruction);
+    void addi(u32 instruction);
+    void addiu(u32 instruction);
+    void addu(u32 instruction);
+    void and_(u32 instruction);
+    void andi(u32 instruction);
+    void beq(u32 instruction);
+    void bgez(u32 instruction);
+    void bgezal(u32 instruction);
+    void bgtz(u32 instruction);
+    void blez(u32 instruction);
+    void bltz(u32 instruction);
+    void bltzal(u32 instruction);
+    void bne(u32 instruction);
     void break_(u32 instruction);
+    void j(u32 instruction);
+    void jal(u32 instruction);
+    void jalr(u32 instruction);
+    void jr(u32 instruction);
     void lui(u32 instruction);
+    void nor(u32 instruction);
+    void or_(u32 instruction);
     void ori(u32 instruction);
     void sll(u32 instruction);
+    void sllv(u32 instruction);
+    void sra(u32 instruction);
+    void srav(u32 instruction);
+    void srl(u32 instruction);
+    void srlv(u32 instruction);
+    void sub(u32 instruction);
+    void subu(u32 instruction);
     void sw(u32 instruction);
+    void xor_(u32 instruction);
+    void xori(u32 instruction);
 };
